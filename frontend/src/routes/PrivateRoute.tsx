@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 
 interface Props {
   children: JSX.Element
-  role?: 'ADMIN' | 'CONSULTA'
+  role?: 'ADMIN' | 'CONSULTA' | 'PEDIDOS'
 }
 
 export default function PrivateRoute({ children, role }: Props) {

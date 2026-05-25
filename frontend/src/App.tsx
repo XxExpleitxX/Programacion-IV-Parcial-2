@@ -4,6 +4,7 @@ import IngredientesPage from './pages/IngredientesPage'
 import ProductosPage from './pages/ProductosPage'
 import ProductoDetallePage from './pages/ProductoDetallePage'
 import LoginPage from './pages/LoginPage'
+import CajeroPedidosPage from './pages/CajeroPedidoPage'
 import PrivateRoute from './routes/PrivateRoute'
 import { useAuth } from './context/AuthContext'
 
@@ -28,6 +29,7 @@ function Header() {
   const { user, role, logout } = useAuth()
   const navigate = useNavigate()
   const esAdmin = role === 'ADMIN'
+  const esCajero = role === 'PEDIDOS' || role === 'ADMIN'
 
   const handleLogout = () => {
     logout()
@@ -46,11 +48,10 @@ function Header() {
 
         {user && (
           <nav className="flex items-center gap-1">
-            {/* Solo ADMIN ve Categorías e Ingredientes */}
             {esAdmin && <NavItem to="/categorias" label="Categorías" />}
             {esAdmin && <NavItem to="/ingredientes" label="Ingredientes" />}
-            {/* Todos los usuarios logueados ven Productos */}
             <NavItem to="/productos" label="Productos" />
+            {esCajero && <NavItem to="/cajero" label="Cajero" />}
             <button
               onClick={handleLogout}
               className="ml-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
@@ -71,54 +72,32 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
         <Routes>
-          {/* Ruta pública */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Ruta raíz → redirige según rol dentro de PrivateRoute */}
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <ProductosPage />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/" element={
+            <PrivateRoute><ProductosPage /></PrivateRoute>
+          } />
 
-          {/* Solo ADMIN */}
-          <Route
-            path="/categorias"
-            element={
-              <PrivateRoute role="ADMIN">
-                <CategoriasPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ingredientes"
-            element={
-              <PrivateRoute role="ADMIN">
-                <IngredientesPage />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/categorias" element={
+            <PrivateRoute role="ADMIN"><CategoriasPage /></PrivateRoute>
+          } />
 
-          {/* ADMIN + CONSULTA */}
-          <Route
-            path="/productos"
-            element={
-              <PrivateRoute>
-                <ProductosPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/productos/:id"
-            element={
-              <PrivateRoute>
-                <ProductoDetallePage />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/ingredientes" element={
+            <PrivateRoute role="ADMIN"><IngredientesPage /></PrivateRoute>
+          } />
+
+          <Route path="/productos" element={
+            <PrivateRoute><ProductosPage /></PrivateRoute>
+          } />
+
+          <Route path="/productos/:id" element={
+            <PrivateRoute><ProductoDetallePage /></PrivateRoute>
+          } />
+
+          {/* Pantalla cajero — ADMIN y PEDIDOS */}
+          <Route path="/cajero" element={
+            <PrivateRoute role="PEDIDOS"><CajeroPedidosPage /></PrivateRoute>
+          } />
         </Routes>
       </main>
     </div>

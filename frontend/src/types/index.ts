@@ -83,3 +83,30 @@ export interface ProductoUpdate {
   categoria_ids?: number[];
   es_manufacturado?: boolean;
 }
+
+export interface DetallePedido {
+  pedido_id: number;
+  producto_id: number;
+  cantidad: number;
+  nombre_snapshot: string;
+  precio_snapshot: number;
+  subtotal_snap: number;
+  personalizacion: number[] | null;
+  created_at: string;
+}
+
+export interface Pedido {
+  id: number;
+  usuario_id: number;
+  direccion_id: number | null;
+  estado_codigo: string;
+  forma_pago_codigo: string;
+  subtotal: number;
+  descuento: number;
+  costo_envio: number;
+  total: number;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+  detalles: DetallePedido[];
+}

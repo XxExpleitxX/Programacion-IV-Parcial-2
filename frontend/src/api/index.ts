@@ -92,3 +92,19 @@ export const productosApi = {
   patchDisponibilidad: (id: number, disponible: boolean) =>
     request<Producto>(`/productos/${id}/disponibilidad`, { method: 'PATCH', body: JSON.stringify({ disponible }) }),
 };
+
+export const pedidosApi = {
+  getAll: (params?: { estado?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.estado) qs.set('estado', params.estado);
+    return request<any[]>(`/pedidos/?${qs}`);
+  },
+  getById: (id: number) => request<any>(`/pedidos/${id}`),
+  getHistorial: (id: number) => request<any[]>(`/pedidos/${id}/historial`),
+  avanzarEstado: (id: number, estado_hacia: string, motivo?: string) =>
+    request<any>(`/pedidos/${id}/estado`, {
+      method: 'POST',
+      body: JSON.stringify({ estado_hacia, motivo: motivo || null }),
+    }),
+};
+ 
