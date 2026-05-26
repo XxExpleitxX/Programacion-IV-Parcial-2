@@ -15,6 +15,7 @@ function IngredienteForm({ initial, onSubmit, isLoading, error }: FormProps) {
   const [nombre, setNombre] = useState(initial?.nombre ?? '')
   const [descripcion, setDescripcion] = useState(initial?.descripcion ?? '')
   const [esAlergeno, setEsAlergeno] = useState(initial?.es_alergeno ?? false)
+  const [precioUnitario, setPrecioUnitario] = useState(String(initial?.precio_unitario ?? '0'))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +23,7 @@ function IngredienteForm({ initial, onSubmit, isLoading, error }: FormProps) {
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
       es_alergeno: esAlergeno,
+      precio_unitario: Number(precioUnitario),
     })
   }
 
@@ -36,6 +38,12 @@ function IngredienteForm({ initial, onSubmit, isLoading, error }: FormProps) {
         <label className="block text-xs font-medium text-slate-400 mb-1">Descripción</label>
         <input className="input-field" value={descripcion} onChange={e => setDescripcion(e.target.value)}
           placeholder="Descripción opcional" />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-slate-400 mb-1">Precio unitario *</label>
+        <input className="input-field" type="number" min="0" step="0.01"
+          value={precioUnitario} onChange={e => setPrecioUnitario(e.target.value)}
+          placeholder="0.00" required />
       </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" checked={esAlergeno} onChange={e => setEsAlergeno(e.target.checked)}
@@ -110,9 +118,9 @@ export default function IngredientesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">ID</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Nombre</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Descripción</th>
+                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio unitario</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Alérgeno</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
               </tr>
@@ -123,9 +131,11 @@ export default function IngredientesPage() {
               )}
               {ingredientes.map(ing => (
                 <tr key={ing.id} className="hover:bg-surface/50 transition-colors">
-                  <td className="py-3 text-slate-500">{ing.id}</td>
                   <td className="py-3 font-medium text-slate-100">{ing.nombre}</td>
                   <td className="py-3 text-slate-400">{ing.descripcion ?? '—'}</td>
+                  <td className="py-3 text-brand-400 font-medium">
+                    ${(ing.precio_unitario ?? 0).toFixed(2)}
+                  </td>
                   <td className="py-3">
                     {ing.es_alergeno
                       ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-900/40 text-red-300">Alérgeno</span>

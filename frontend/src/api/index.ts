@@ -69,6 +69,8 @@ export const productosApi = {
     axiosInstance.delete(`/productos/${id}`).then(r => r.data),
   patchDisponibilidad: (id: number, disponible: boolean) =>
     axiosInstance.patch<Producto>(`/productos/${id}/disponibilidad`, { disponible }).then(r => r.data),
+  calcularPrecio: (id: number, margen: number) =>
+  axiosInstance.get(`/productos/${id}/precio-sugerido`, { params: { margen } }).then(r => r.data),
 }
 
 // ─── Pedidos ──────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { productosApi, categoriasApi, unidadesApi, ingredientesApi } from '../api'
-import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida, Ingrediente } from '../types'
+import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida } from '../types'
 import Modal from '../components/Modal'
 import { useAuth } from '../context/AuthContext'
 
@@ -12,7 +12,6 @@ interface FormProps {
   initial?: Producto
   categorias: Categoria[]
   unidades: UnidadMedida[]
-  ingredientes: Ingrediente[]
   onSubmit: (data: ProductoCreate | ProductoUpdate) => void
   isLoading: boolean
   error: string | null
@@ -27,18 +26,35 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
   const [unidadVentaId, setUnidadVentaId] = useState<number | null>(initial?.unidad_venta_id ?? null)
   const [esManufacturado, setEsManufacturado] = useState(initial?.es_manufacturado ?? false)
   const [categoriaIds, setCategoriaIds] = useState<number[]>(initial?.categorias.map(c => c.id) ?? [])
+  const [validacionError, setValidacionError] = useState<string | null>(null)
 
-  // Aplanar árbol categorías
+  // Ingredientes del producto (solo para manufacturados)
+  const { data: ingredientesDisponibles = [] } = useQuery({
+    queryKey: ['ingredientes'],
+    queryFn: () => ingredientesApi.getAll(),
+  })
+  const [ingredienteIds, setIngredienteIds] = useState<number[]>([])
+
   const aplanar = (cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] =>
     cats.flatMap(c => [{ cat: c, nivel }, ...aplanar(c.subcategorias ?? [], nivel + 1)])
   const opcionesCats = aplanar(categorias)
 
-  const toggleCategoria = (id: number) => {
+  const toggleCategoria = (id: number) =>
     setCategoriaIds(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id])
-  }
+
+  const toggleIngrediente = (id: number) =>
+    setIngredienteIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setValidacionError(null)
+
+    // Validación front: manufacturado necesita al menos un ingrediente
+    if (esManufacturado && ingredienteIds.length === 0) {
+      setValidacionError('Debe cargar un ingrediente para guardarlo')
+      return
+    }
+
     onSubmit({
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
@@ -48,6 +64,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       unidad_venta_id: unidadVentaId,
       es_manufacturado: esManufacturado,
       categoria_ids: categoriaIds,
+      ingrediente_ids: esManufacturado ? ingredienteIds : [],
     })
   }
 
@@ -73,7 +90,6 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             onChange={e => setStockCantidad(e.target.value)} />
         </div>
 
-        {/* Parametrizar unidad */}
         <div className="col-span-2">
           <label className="block text-xs font-medium text-slate-400 mb-1">Unidad de venta</label>
           <select className="input-field" value={unidadVentaId ?? ''} onChange={e => setUnidadVentaId(e.target.value ? Number(e.target.value) : null)}>
@@ -89,12 +105,42 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           <span className="text-sm text-slate-300">Disponible</span>
         </div>
         <div className="flex items-center gap-2">
-          <input type="checkbox" checked={esManufacturado} onChange={e => setEsManufacturado(e.target.checked)} className="w-4 h-4 accent-brand-600" />
+          <input type="checkbox" checked={esManufacturado} onChange={e => { setEsManufacturado(e.target.checked); setValidacionError(null) }} className="w-4 h-4 accent-brand-600" />
           <span className="text-sm text-slate-300">Es manufacturado</span>
         </div>
       </div>
 
-      {/* Categorías como árbol */}
+      {/* Ingredientes — solo si es manufacturado */}
+      {esManufacturado && (
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-2">
+            Ingredientes * <span className="text-slate-500">(al menos uno)</span>
+          </label>
+          <div className="border border-border rounded-lg p-3 max-h-40 overflow-y-auto space-y-1">
+            {ingredientesDisponibles.length === 0
+              ? <p className="text-slate-500 text-xs">No hay ingredientes cargados</p>
+              : ingredientesDisponibles.map(ing => (
+                <label key={ing.id} className="flex items-center gap-2 cursor-pointer hover:bg-surface/50 rounded px-2 py-0.5">
+                  <input type="checkbox" checked={ingredienteIds.includes(ing.id)}
+                    onChange={() => toggleIngrediente(ing.id)} className="w-3.5 h-3.5 accent-brand-600" />
+                  <span className="text-sm text-slate-300">{ing.nombre}</span>
+                  {ing.es_alergeno && (
+                    <span className="text-xs bg-red-900/40 text-red-300 px-1.5 rounded">Alérgeno</span>
+                  )}
+                </label>
+              ))
+            }
+          </div>
+          {/* Validación visible */}
+          {validacionError && (
+            <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg mt-2">
+              ⚠️ {validacionError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Categorías */}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Categorías</label>
         <div className="border border-border rounded-lg p-3 max-h-40 overflow-y-auto space-y-1">
@@ -119,6 +165,77 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
   )
 }
 
+// ── Calculadora de precio ─────────────────────────────────────────────────
+
+interface CalculadoraProps {
+  productoId: number
+  onClose: () => void
+}
+
+function CalculadoraPrecio({ productoId, onClose }: CalculadoraProps) {
+  const [margen, setMargen] = useState(30)
+  const [resultado, setResultado] = useState<{ costo_total: number; precio_sugerido: number; margen_porcentaje: number } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const calcular = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await productosApi.calcularPrecio(productoId, margen)
+      setResultado(data)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-slate-400 text-sm">Calculá el precio sugerido de venta basado en el costo de ingredientes.</p>
+      <div>
+        <label className="block text-xs font-medium text-slate-400 mb-1">Margen de ganancia (%)</label>
+        <div className="flex gap-3 items-center">
+          <input type="range" min="0" max="200" value={margen}
+            onChange={e => setMargen(Number(e.target.value))} className="flex-1" />
+          <input type="number" min="0" max="1000" value={margen}
+            onChange={e => setMargen(Number(e.target.value))}
+            className="input-field w-24 text-center" />
+          <span className="text-slate-400">%</span>
+        </div>
+      </div>
+
+      <button onClick={calcular} disabled={loading} className="btn-primary w-full">
+        {loading ? 'Calculando...' : 'Calcular precio'}
+      </button>
+
+      {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
+
+      {resultado && (
+        <div className="bg-surface border border-border rounded-lg p-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-400">Costo de ingredientes:</span>
+            <span className="text-slate-200">${resultado.costo_total.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-400">Margen aplicado:</span>
+            <span className="text-slate-200">{resultado.margen_porcentaje}%</span>
+          </div>
+          <div className="flex justify-between text-base font-bold border-t border-border pt-2">
+            <span className="text-slate-300">Precio sugerido:</span>
+            <span className="text-brand-400 text-lg">${resultado.precio_sugerido.toFixed(2)}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <button onClick={onClose} className="btn-secondary">Cerrar</button>
+      </div>
+    </div>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────
 
 export default function ProductosPage() {
@@ -127,14 +244,13 @@ export default function ProductosPage() {
   const { role } = useAuth()
   const esAdmin = role === 'ADMIN'
 
-  // Filtros
   const [search, setSearch] = useState('')
   const [filtroDisponible, setFiltroDisponible] = useState<string>('')
   const [filtroCategoria, setFiltroCategoria] = useState<string>('')
-
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
   const [mutError, setMutError] = useState<string | null>(null)
+  const [calculadoraProductoId, setCalculadoraProductoId] = useState<number | null>(null)
 
   const { data: productos = [], isLoading, isError } = useQuery({
     queryKey: ['productos', search, filtroDisponible, filtroCategoria],
@@ -147,12 +263,16 @@ export default function ProductosPage() {
 
   const { data: arbolCats = [] } = useQuery({ queryKey: ['categorias-arbol'], queryFn: categoriasApi.getArbol })
   const { data: unidades = [] } = useQuery({ queryKey: ['unidades'], queryFn: unidadesApi.getAll })
-  const { data: ingredientes = [] } = useQuery({ queryKey: ['ingredientes'], queryFn: () => ingredientesApi.getAll() })
 
-  // Aplanar categorías para el select de filtro
   const aplanar = (cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] =>
     cats.flatMap(c => [{ cat: c, nivel }, ...aplanar(c.subcategorias ?? [], nivel + 1)])
   const opcionesCats = aplanar(arbolCats)
+
+  // Helper para obtener símbolo de unidad por id
+  const getUnidadSimbolo = (id: number | null) => {
+    if (!id) return '—'
+    return unidades.find(u => u.id === id)?.simbolo ?? '—'
+  }
 
   const createMut = useMutation({
     mutationFn: (data: ProductoCreate) => productosApi.create(data),
@@ -196,7 +316,7 @@ export default function ProductosPage() {
         )}
       </div>
 
-      {/* Filtros — 3 filtros */}
+      {/* 3 Filtros */}
       <div className="flex gap-3 mb-5 flex-wrap">
         <input className="input-field max-w-xs" placeholder="Buscar por nombre..."
           value={search} onChange={e => setSearch(e.target.value)} />
@@ -220,11 +340,10 @@ export default function ProductosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Producto</th>
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio</th>
+                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Descripción</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Stock</th>
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingredientes</th>
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Categorías</th>
+                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Unidad</th>
+                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Categoría</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tipo</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
@@ -232,17 +351,18 @@ export default function ProductosPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {productos.length === 0 && (
-                <tr><td colSpan={8} className="py-8 text-center text-slate-500">Sin resultados</td></tr>
+                <tr><td colSpan={7} className="py-8 text-center text-slate-500">Sin resultados</td></tr>
               )}
               {productos.map(p => (
                 <tr key={p.id} className="hover:bg-surface/50 transition-colors">
+                  {/* Descripción */}
                   <td className="py-3">
                     <div className="font-medium text-slate-100">{p.nombre}</div>
                     {p.descripcion && <div className="text-xs text-slate-500 truncate max-w-xs">{p.descripcion}</div>}
+                    <div className="text-brand-400 text-xs font-medium">${(p.precio_base ?? 0).toFixed(2)}</div>
                   </td>
-                  <td className="py-3 font-medium text-brand-400">${(p.precio_base ?? 0).toFixed(2)}</td>
 
-                  {/* Control de stock */}
+                  {/* Stock */}
                   <td className="py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       p.stock_cantidad > 0 ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'
@@ -251,18 +371,12 @@ export default function ProductosPage() {
                     </span>
                   </td>
 
-                  {/* Indicar cuántos ingredientes */}
-                  <td className="py-3 text-slate-400 text-center">
-                    {p.es_manufacturado ? (
-                      <span className="px-2 py-0.5 bg-purple-900/40 text-purple-300 rounded text-xs">
-                        Manufacturado
-                      </span>
-                    ) : (
-                      <span className="text-slate-500 text-xs">—</span>
-                    )}
+                  {/* Unidad de medida */}
+                  <td className="py-3 text-slate-300 text-sm">
+                    {getUnidadSimbolo(p.unidad_venta_id)}
                   </td>
 
-                  {/* Categorías */}
+                  {/* Categoría */}
                   <td className="py-3">
                     <div className="flex flex-wrap gap-1">
                       {(p.categorias ?? []).map(c => (
@@ -272,7 +386,7 @@ export default function ProductosPage() {
                     </div>
                   </td>
 
-                  {/* Tipo */}
+                  {/* Tipo manufacturado/terminado */}
                   <td className="py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       p.es_manufacturado ? 'bg-purple-900/40 text-purple-300' : 'bg-slate-800 text-slate-400'
@@ -281,7 +395,7 @@ export default function ProductosPage() {
                     </span>
                   </td>
 
-                  {/* Estado con toggle */}
+                  {/* Estado disponible */}
                   <td className="py-3">
                     <button
                       onClick={() => esAdmin && toggleDisponible.mutate({ id: p.id, disponible: !p.disponible })}
@@ -296,13 +410,18 @@ export default function ProductosPage() {
                     </button>
                   </td>
 
+                  {/* Acciones */}
                   <td className="py-3">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <button onClick={() => navigate(`/productos/${p.id}`)} className="btn-secondary py-1 px-3">Ver</button>
                       {esAdmin && (
                         <>
                           <button onClick={() => { setEditing(p); setMutError(null); setModalOpen(true) }}
                             className="btn-secondary py-1 px-3">Editar</button>
+                          {p.es_manufacturado && (
+                            <button onClick={() => setCalculadoraProductoId(p.id)}
+                              className="btn-secondary py-1 px-3 text-brand-400">💰 Precio</button>
+                          )}
                           <button onClick={() => { if (confirm('¿Eliminar?')) deleteMut.mutate(p.id) }}
                             className="btn-danger py-1 px-3">Eliminar</button>
                         </>
@@ -316,6 +435,7 @@ export default function ProductosPage() {
         </div>
       )}
 
+      {/* Modal crear/editar */}
       {esAdmin && (
         <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setMutError(null) }}
           title={editing ? 'Editar producto' : 'Nuevo producto'}>
@@ -323,10 +443,19 @@ export default function ProductosPage() {
             initial={editing ?? undefined}
             categorias={arbolCats}
             unidades={unidades}
-            ingredientes={ingredientes}
             onSubmit={handleSubmit}
             isLoading={createMut.isPending || updateMut.isPending}
             error={mutError}
+          />
+        </Modal>
+      )}
+
+      {/* Modal calculadora precio */}
+      {calculadoraProductoId && (
+        <Modal isOpen={true} onClose={() => setCalculadoraProductoId(null)} title="Calculadora de precio sugerido">
+          <CalculadoraPrecio
+            productoId={calculadoraProductoId}
+            onClose={() => setCalculadoraProductoId(null)}
           />
         </Modal>
       )}

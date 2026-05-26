@@ -18,6 +18,7 @@ class Ingrediente(SQLModel, table=True):
     nombre:      str           = Field(max_length=100, unique=True)
     descripcion: Optional[str] = Field(default=None)
     es_alergeno: bool          = Field(default=False)
+    precio_unitario: float = Field(default=0.0, ge=0)
 
     # Audit
     created_at: datetime = Field(default_factory=datetime.utcnow)

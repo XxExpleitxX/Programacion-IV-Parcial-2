@@ -34,18 +34,21 @@ export interface Ingrediente {
   nombre: string;
   descripcion: string | null;
   es_alergeno: boolean;
+  precio_unitario: number;
 }
 
 export interface IngredienteCreate {
   nombre: string;
   descripcion?: string;
   es_alergeno?: boolean;
+  precio_unitario: number;
 }
 
 export interface IngredienteUpdate {
   nombre?: string;
   descripcion?: string;
   es_alergeno?: boolean;
+  precio_unitario?: number;
 }
 
 // ─── Producto ────────────────────────────────────────────
