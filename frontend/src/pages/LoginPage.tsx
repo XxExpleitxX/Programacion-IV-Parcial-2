@@ -30,7 +30,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <h1 className="text-4xl font-bold text-slate-100 mb-10 text-center">
-        Iniciar Sesión - Registro de Participantes
+        Iniciar Sesión
       </h1>
 
       <div className="w-full max-w-sm flex flex-col gap-4">
