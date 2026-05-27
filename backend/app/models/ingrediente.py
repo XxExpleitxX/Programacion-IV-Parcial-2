@@ -19,6 +19,8 @@ class Ingrediente(SQLModel, table=True):
     descripcion: Optional[str] = Field(default=None)
     es_alergeno: bool          = Field(default=False)
     precio_unitario: float = Field(default=0.0, ge=0)
+    stock_disponible: float = Field(default=0.0, ge=0)
+    unidad_medida_id: Optional[int] = Field(default=None, foreign_key="unidades_medida.id", nullable=True)
 
     # Audit
     created_at: datetime = Field(default_factory=datetime.utcnow)

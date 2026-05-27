@@ -35,6 +35,8 @@ export interface Ingrediente {
   descripcion: string | null;
   es_alergeno: boolean;
   precio_unitario: number;
+  stock_disponible?: number;       
+  unidad_medida_id?: number | null;
 }
 
 export interface IngredienteCreate {
@@ -42,6 +44,8 @@ export interface IngredienteCreate {
   descripcion?: string;
   es_alergeno?: boolean;
   precio_unitario: number;
+  stock_disponible?: number;
+  unidad_medida_id?: number | null;
 }
 
 export interface IngredienteUpdate {
@@ -49,6 +53,8 @@ export interface IngredienteUpdate {
   descripcion?: string;
   es_alergeno?: boolean;
   precio_unitario?: number;
+  stock_disponible?: number;
+  unidad_medida_id?: number | null;
 }
 
 // ─── Producto ────────────────────────────────────────────

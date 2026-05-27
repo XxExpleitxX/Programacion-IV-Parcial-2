@@ -2,9 +2,17 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { productosApi, categoriasApi, unidadesApi, ingredientesApi } from '../api'
-import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida } from '../types'
+import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida, Ingrediente } from '../types'
 import Modal from '../components/Modal'
 import { useAuth } from '../context/AuthContext'
+import { toggleCategoriaConCascada } from '../utils/categorias'
+
+// ── Tipos internos ────────────────────────────────────────────────────────
+
+interface IngredienteConCantidad {
+  ingrediente: Ingrediente
+  cantidad: number
+}
 
 // ── Formulario ────────────────────────────────────────────────────────────
 
@@ -28,29 +36,43 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
   const [categoriaIds, setCategoriaIds] = useState<number[]>(initial?.categorias.map(c => c.id) ?? [])
   const [validacionError, setValidacionError] = useState<string | null>(null)
 
-  // Ingredientes del producto (solo para manufacturados)
+  // Ingredientes con cantidad
   const { data: ingredientesDisponibles = [] } = useQuery({
     queryKey: ['ingredientes'],
     queryFn: () => ingredientesApi.getAll(),
   })
-  const [ingredienteIds, setIngredienteIds] = useState<number[]>([])
+  const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteConCantidad[]>([])
 
   const aplanar = (cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] =>
     cats.flatMap(c => [{ cat: c, nivel }, ...aplanar(c.subcategorias ?? [], nivel + 1)])
   const opcionesCats = aplanar(categorias)
 
-  const toggleCategoria = (id: number) =>
-    setCategoriaIds(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id])
+  const toggleCategoria = (id: number) => {
+    setCategoriaIds(prev => toggleCategoriaConCascada(id, categorias, prev))
+  }
 
-  const toggleIngrediente = (id: number) =>
-    setIngredienteIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  const toggleIngrediente = (ing: Ingrediente) => {
+    setIngredientesSeleccionados(prev => {
+      const existe = prev.find(i => i.ingrediente.id === ing.id)
+      if (existe) return prev.filter(i => i.ingrediente.id !== ing.id)
+      return [...prev, { ingrediente: ing, cantidad: 1 }]
+    })
+  }
+
+  const setCantidad = (ingredienteId: number, cantidad: number) => {
+    setIngredientesSeleccionados(prev =>
+      prev.map(i => i.ingrediente.id === ingredienteId ? { ...i, cantidad } : i)
+    )
+  }
+
+  const getUnidadSimbolo = (id: number | null | undefined) =>
+    id ? unidades.find(u => u.id === id)?.simbolo ?? '' : ''
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setValidacionError(null)
 
-    // Validación front: manufacturado necesita al menos un ingrediente
-    if (esManufacturado && ingredienteIds.length === 0) {
+    if (esManufacturado && ingredientesSeleccionados.length === 0) {
       setValidacionError('Debe cargar un ingrediente para guardarlo')
       return
     }
@@ -60,11 +82,11 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       descripcion: descripcion.trim() || undefined,
       precio_base: Number(precioBase),
       disponible,
-      stock_cantidad: Number(stockCantidad),
+      stock_cantidad: esManufacturado ? 0 : Number(stockCantidad),
       unidad_venta_id: unidadVentaId,
       es_manufacturado: esManufacturado,
       categoria_ids: categoriaIds,
-      ingrediente_ids: esManufacturado ? ingredienteIds : [],
+      ingrediente_ids: esManufacturado ? ingredientesSeleccionados.map(i => i.ingrediente.id) : [],
     })
   }
 
@@ -84,13 +106,17 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           <input className="input-field" type="number" min="0" step="0.01" value={precioBase}
             onChange={e => setPrecioBase(e.target.value)} required />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Stock</label>
-          <input className="input-field" type="number" min="0" value={stockCantidad}
-            onChange={e => setStockCantidad(e.target.value)} />
-        </div>
 
-        <div className="col-span-2">
+        {/* Stock — solo si NO es manufacturado */}
+        {!esManufacturado && (
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Stock</label>
+            <input className="input-field" type="number" min="0" value={stockCantidad}
+              onChange={e => setStockCantidad(e.target.value)} />
+          </div>
+        )}
+
+        <div className={esManufacturado ? 'col-span-2' : 'col-span-2'}>
           <label className="block text-xs font-medium text-slate-400 mb-1">Unidad de venta</label>
           <select className="input-field" value={unidadVentaId ?? ''} onChange={e => setUnidadVentaId(e.target.value ? Number(e.target.value) : null)}>
             <option value="">— Sin unidad (por pieza) —</option>
@@ -105,33 +131,73 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           <span className="text-sm text-slate-300">Disponible</span>
         </div>
         <div className="flex items-center gap-2">
-          <input type="checkbox" checked={esManufacturado} onChange={e => { setEsManufacturado(e.target.checked); setValidacionError(null) }} className="w-4 h-4 accent-brand-600" />
+          <input type="checkbox" checked={esManufacturado}
+            onChange={e => { setEsManufacturado(e.target.checked); setValidacionError(null); setIngredientesSeleccionados([]) }}
+            className="w-4 h-4 accent-brand-600" />
           <span className="text-sm text-slate-300">Es manufacturado</span>
         </div>
       </div>
 
-      {/* Ingredientes — solo si es manufacturado */}
+      {/* Ingredientes con cantidad — solo si es manufacturado */}
       {esManufacturado && (
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-2">
             Ingredientes * <span className="text-slate-500">(al menos uno)</span>
           </label>
-          <div className="border border-border rounded-lg p-3 max-h-40 overflow-y-auto space-y-1">
+
+          {/* Lista de ingredientes disponibles para agregar */}
+          <div className="border border-border rounded-lg p-3 max-h-36 overflow-y-auto space-y-1 mb-3">
             {ingredientesDisponibles.length === 0
               ? <p className="text-slate-500 text-xs">No hay ingredientes cargados</p>
-              : ingredientesDisponibles.map(ing => (
-                <label key={ing.id} className="flex items-center gap-2 cursor-pointer hover:bg-surface/50 rounded px-2 py-0.5">
-                  <input type="checkbox" checked={ingredienteIds.includes(ing.id)}
-                    onChange={() => toggleIngrediente(ing.id)} className="w-3.5 h-3.5 accent-brand-600" />
-                  <span className="text-sm text-slate-300">{ing.nombre}</span>
-                  {ing.es_alergeno && (
-                    <span className="text-xs bg-red-900/40 text-red-300 px-1.5 rounded">Alérgeno</span>
-                  )}
-                </label>
-              ))
+              : ingredientesDisponibles.map(ing => {
+                const seleccionado = ingredientesSeleccionados.some(i => i.ingrediente.id === ing.id)
+                return (
+                  <label key={ing.id} className={`flex items-center gap-2 cursor-pointer rounded px-2 py-1 transition-colors ${
+                    seleccionado ? 'bg-brand-900/30' : 'hover:bg-surface/50'
+                  }`}>
+                    <input type="checkbox" checked={seleccionado}
+                      onChange={() => toggleIngrediente(ing)} className="w-3.5 h-3.5 accent-brand-600" />
+                    <span className="text-sm text-slate-300 flex-1">{ing.nombre}</span>
+                    <span className="text-xs text-slate-500">
+                      Stock: {ing.stock_disponible ?? 0} {getUnidadSimbolo(ing.unidad_medida_id)}
+                    </span>
+                    {ing.es_alergeno && (
+                      <span className="text-xs bg-red-900/40 text-red-300 px-1.5 rounded">Alérgeno</span>
+                    )}
+                  </label>
+                )
+              })
             }
           </div>
-          {/* Validación visible */}
+
+          {/* Cantidades por ingrediente seleccionado */}
+          {ingredientesSeleccionados.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-400">Cantidad a usar por unidad de producto:</p>
+              {ingredientesSeleccionados.map(({ ingrediente, cantidad }) => {
+                const simbolo = getUnidadSimbolo(ingrediente.unidad_medida_id)
+                return (
+                  <div key={ingrediente.id} className="flex items-center gap-3 bg-surface rounded-lg px-3 py-2">
+                    <span className="text-sm text-slate-200 flex-1">{ingrediente.nombre}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        value={cantidad}
+                        onChange={e => setCantidad(ingrediente.id, Number(e.target.value))}
+                        className="input-field w-24 text-right text-sm py-1"
+                      />
+                      <span className="text-xs text-slate-400 w-8">{simbolo}</span>
+                    </div>
+                    <button type="button" onClick={() => toggleIngrediente(ingrediente)}
+                      className="text-red-400 hover:text-red-300 text-xs">✕</button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {validacionError && (
             <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg mt-2">
               ⚠️ {validacionError}
@@ -205,13 +271,10 @@ function CalculadoraPrecio({ productoId, onClose }: CalculadoraProps) {
           <span className="text-slate-400">%</span>
         </div>
       </div>
-
       <button onClick={calcular} disabled={loading} className="btn-primary w-full">
         {loading ? 'Calculando...' : 'Calcular precio'}
       </button>
-
       {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
-
       {resultado && (
         <div className="bg-surface border border-border rounded-lg p-4 space-y-2">
           <div className="flex justify-between text-sm">
@@ -228,7 +291,6 @@ function CalculadoraPrecio({ productoId, onClose }: CalculadoraProps) {
           </div>
         </div>
       )}
-
       <div className="flex justify-end">
         <button onClick={onClose} className="btn-secondary">Cerrar</button>
       </div>
@@ -268,7 +330,6 @@ export default function ProductosPage() {
     cats.flatMap(c => [{ cat: c, nivel }, ...aplanar(c.subcategorias ?? [], nivel + 1)])
   const opcionesCats = aplanar(arbolCats)
 
-  // Helper para obtener símbolo de unidad por id
   const getUnidadSimbolo = (id: number | null) => {
     if (!id) return '—'
     return unidades.find(u => u.id === id)?.simbolo ?? '—'
@@ -316,7 +377,6 @@ export default function ProductosPage() {
         )}
       </div>
 
-      {/* 3 Filtros */}
       <div className="flex gap-3 mb-5 flex-wrap">
         <input className="input-field max-w-xs" placeholder="Buscar por nombre..."
           value={search} onChange={e => setSearch(e.target.value)} />
@@ -355,28 +415,20 @@ export default function ProductosPage() {
               )}
               {productos.map(p => (
                 <tr key={p.id} className="hover:bg-surface/50 transition-colors">
-                  {/* Descripción */}
                   <td className="py-3">
                     <div className="font-medium text-slate-100">{p.nombre}</div>
                     {p.descripcion && <div className="text-xs text-slate-500 truncate max-w-xs">{p.descripcion}</div>}
                     <div className="text-brand-400 text-xs font-medium">${(p.precio_base ?? 0).toFixed(2)}</div>
                   </td>
-
-                  {/* Stock */}
                   <td className="py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      p.stock_cantidad > 0 ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'
-                    }`}>
-                      {p.stock_cantidad ?? 0}
-                    </span>
+                    {p.es_manufacturado
+                      ? <span className="text-slate-500 text-xs italic">En base a insumos</span>
+                      : <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          p.stock_cantidad > 0 ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'
+                        }`}>{p.stock_cantidad ?? 0}</span>
+                    }
                   </td>
-
-                  {/* Unidad de medida */}
-                  <td className="py-3 text-slate-300 text-sm">
-                    {getUnidadSimbolo(p.unidad_venta_id)}
-                  </td>
-
-                  {/* Categoría */}
+                  <td className="py-3 text-slate-300 text-sm">{getUnidadSimbolo(p.unidad_venta_id)}</td>
                   <td className="py-3">
                     <div className="flex flex-wrap gap-1">
                       {(p.categorias ?? []).map(c => (
@@ -385,8 +437,6 @@ export default function ProductosPage() {
                       {(p.categorias ?? []).length === 0 && <span className="text-slate-500 text-xs">—</span>}
                     </div>
                   </td>
-
-                  {/* Tipo manufacturado/terminado */}
                   <td className="py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       p.es_manufacturado ? 'bg-purple-900/40 text-purple-300' : 'bg-slate-800 text-slate-400'
@@ -394,23 +444,17 @@ export default function ProductosPage() {
                       {p.es_manufacturado ? 'Manufacturado' : 'Terminado'}
                     </span>
                   </td>
-
-                  {/* Estado disponible */}
                   <td className="py-3">
                     <button
                       onClick={() => esAdmin && toggleDisponible.mutate({ id: p.id, disponible: !p.disponible })}
                       disabled={!esAdmin}
                       className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                        p.disponible
-                          ? 'bg-green-900/40 text-green-300 hover:bg-green-900/70'
-                          : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                        p.disponible ? 'bg-green-900/40 text-green-300 hover:bg-green-900/70' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                       } ${!esAdmin ? 'cursor-default' : 'cursor-pointer'}`}
                     >
                       {p.disponible ? 'Disponible' : 'No disponible'}
                     </button>
                   </td>
-
-                  {/* Acciones */}
                   <td className="py-3">
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => navigate(`/productos/${p.id}`)} className="btn-secondary py-1 px-3">Ver</button>
@@ -435,10 +479,9 @@ export default function ProductosPage() {
         </div>
       )}
 
-      {/* Modal crear/editar */}
       {esAdmin && (
         <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setMutError(null) }}
-          title={editing ? 'Editar producto' : 'Nuevo producto'}>
+          title={editing ? 'Editar producto' : 'Nuevo producto'} wide>
           <ProductoForm
             initial={editing ?? undefined}
             categorias={arbolCats}
@@ -450,7 +493,6 @@ export default function ProductosPage() {
         </Modal>
       )}
 
-      {/* Modal calculadora precio */}
       {calculadoraProductoId && (
         <Modal isOpen={true} onClose={() => setCalculadoraProductoId(null)} title="Calculadora de precio sugerido">
           <CalculadoraPrecio
