@@ -20,40 +20,117 @@ https://youtu.be/OqynLC-KjSQ
 
 ```
 proyecto_parcial/
+│
 ├── backend/
-│   ├── app/
-│   │   ├── core/
-│   │   │   └── database.py        # Conexión MySQL + engine SQLModel
-│   │   ├── models/
-│   │   │   └── __init__.py        # Clases SQLModel (tablas + relaciones)
-│   │   ├── schemas/
-│   │   │   └── __init__.py        # Schemas Pydantic request/response
-│   │   ├── routers/
-│   │   │   ├── categorias.py      # Endpoints con Annotated + Query
-│   │   │   ├── ingredientes.py
-│   │   │   └── productos.py
-│   │   ├── services/
-│   │   │   ├── categoria_service.py
-│   │   │   ├── ingrediente_service.py
-│   │   │   └── producto_service.py
-│   │   └── main.py                # FastAPI app + CORS + startup
-│   ├── .env                       # Variables de entorno (DB)
-│   └── requirements.txt
+│   ├── .env
+│   ├── requirements.txt
+│   │
+│   └── app/
+│       ├── main.py
+│       ├── unit_of_work.py
+│       │
+│       ├── core/
+│       │   ├── config.py
+│       │   ├── database.py
+│       │   ├── deps.py
+│       │   ├── websocket.py
+│       │   └── security/
+│       │       ├── jwt_handler.py
+│       │       ├── password_hasher.py
+│       │       ├── oauth2_scheme.py
+│       │       └── permissions.py
+│       │
+│       ├── models/
+│       │   ├── categoria.py
+│       │   ├── producto.py
+│       │   ├── ingrediente.py
+│       │   ├── producto_ingrediente.py
+│       │   ├── producto_categoria.py
+│       │   ├── unidad_medida.py
+│       │   ├── pedido.py
+│       │   ├── detalle_pedido.py
+│       │   ├── historial_estado_pedido.py
+│       │   ├── direccion_entrega.py
+│       │   ├── pago.py
+│       │   ├── catalogs.py
+│       │   └── usuarios/
+│       │       ├── usuario.py
+│       │       ├── usuario_repository.py
+│       │       └── usuario_service.py
+│       │
+│       ├── repositories/
+│       │   ├── base_repository.py
+│       │   ├── categoria_repository.py
+│       │   ├── producto_repository.py
+│       │   ├── ingrediente_repository.py
+│       │   ├── pedido_repository.py
+│       │   └── usuario_repository.py
+│       │
+│       ├── services/
+│       │   ├── pedido_service.py
+│       │   ├── producto_service.py
+│       │   ├── categoria_service.py
+│       │   ├── ingrediente_service.py
+│       │   └── auth_service.py
+│       │
+│       ├── schemas/
+│       │   └── pago_schema.py
+│       │
+│       ├── routers/
+│       │   ├── auth.py
+│       │   ├── categorias.py
+│       │   ├── productos.py
+│       │   ├── ingredientes.py
+│       │   ├── Umedida_router.py
+│       │   ├── pedidos_router.py
+│       │   ├── direcciones_router.py
+│       │   └── admin_router.py
+│       │
+│       └── db/
+│           ├── seed.py
+│           ├── seed_formas_pago.py
+│           └── seed_productos.py
+│
 └── frontend/
-    ├── src/
-    │   ├── api/index.ts           # Funciones fetch tipadas
-    │   ├── types/index.ts         # Interfaces TypeScript
-    │   ├── components/Modal.tsx   # Componente reutilizable
-    │   ├── pages/
-    │   │   ├── CategoriasPage.tsx
-    │   │   ├── IngredientesPage.tsx
-    │   │   ├── ProductosPage.tsx
-    │   │   └── ProductoDetallePage.tsx  # Ruta dinámica /productos/:id
-    │   ├── App.tsx                # Router + navegación
-    │   └── main.tsx               # QueryClient + BrowserRouter
+    ├── index.html
     ├── package.json
+    ├── vite.config.ts
+    ├── tsconfig.json
+    ├── tsconfig.node.json
     ├── tailwind.config.js
-    └── vite.config.ts
+    ├── postcss.config.js
+    │
+    └── src/
+        ├── main.tsx
+        ├── App.tsx
+        ├── index.css
+        │
+        ├── api/
+        │   ├── axiosInstance.ts
+        │   └── index.ts
+        │
+        ├── context/
+        │   └── AuthContext.tsx
+        │
+        ├── routes/
+        │   └── PrivateRoute.tsx
+        │
+        ├── types/
+        │   └── index.ts
+        │
+        ├── utils/
+        │   └── categorias.ts
+        │
+        ├── components/
+        │   └── Modal.tsx
+        │
+        └── pages/
+            ├── LoginPage.tsx
+            ├── CategoriasPage.tsx
+            ├── IngredientesPage.tsx
+            ├── ProductosPage.tsx
+            ├── ProductoDetallePage.tsx
+            └── CajeroPedidoPage.tsx
 ```
 
 ---
