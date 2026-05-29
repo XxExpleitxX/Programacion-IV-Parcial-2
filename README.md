@@ -2,6 +2,12 @@
 
 Aplicación fullstack que integra FastAPI (backend), React + TypeScript (frontend), TanStack Query para estado de servidor y MySQL (XAMPP) como base de datos.
 
+## Integrantes del grupo
+Matias Martinez
+Carla Bustos
+Dario Sinatra
+Emanuel Ortiz
+
 ## 🎥 Video de presentación
 
 Link Video:
