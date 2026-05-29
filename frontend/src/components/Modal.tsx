@@ -23,7 +23,7 @@ export default function Modal({ isOpen, onClose, title, children, wide = false }
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative z-10 bg-card border border-border rounded-2xl shadow-2xl w-full mx-4 p-6 animate-fade-in ${
-        wide ? 'max-w-3xl' : 'max-w-2xl'
+        wide ? 'max-w-5xl' : 'max-w-2xl'
       }`}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-xl text-slate-100">{title}</h2>

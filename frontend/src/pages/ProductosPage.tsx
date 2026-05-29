@@ -35,22 +35,32 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
   const [esManufacturado, setEsManufacturado] = useState(initial?.es_manufacturado ?? false)
   const [categoriaIds, setCategoriaIds] = useState<number[]>(initial?.categorias.map(c => c.id) ?? [])
   const [validacionError, setValidacionError] = useState<string | null>(null)
-
-  // Ingredientes con cantidad
+ 
+  // Calculadora integrada
+  const [costoOperativo, setCostoOperativo] = useState('0')
+  const [margen, setMargen] = useState(30)
+ 
   const { data: ingredientesDisponibles = [] } = useQuery({
     queryKey: ['ingredientes'],
     queryFn: () => ingredientesApi.getAll(),
   })
   const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteConCantidad[]>([])
-
+ 
+  // Cálculo automático en tiempo real
+  const costoIngredientes = ingredientesSeleccionados.reduce((sum, { ingrediente, cantidad }) => {
+    return sum + (ingrediente.precio_unitario ?? 0) * cantidad
+  }, 0)
+  const costoTotal = costoIngredientes + Number(costoOperativo)
+  const precioSugerido = costoTotal * (1 + margen / 100)
+ 
   const aplanar = (cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] =>
     cats.flatMap(c => [{ cat: c, nivel }, ...aplanar(c.subcategorias ?? [], nivel + 1)])
   const opcionesCats = aplanar(categorias)
-
+ 
   const toggleCategoria = (id: number) => {
     setCategoriaIds(prev => toggleCategoriaConCascada(id, categorias, prev))
   }
-
+ 
   const toggleIngrediente = (ing: Ingrediente) => {
     setIngredientesSeleccionados(prev => {
       const existe = prev.find(i => i.ingrediente.id === ing.id)
@@ -58,25 +68,29 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       return [...prev, { ingrediente: ing, cantidad: 1 }]
     })
   }
-
+ 
   const setCantidad = (ingredienteId: number, cantidad: number) => {
     setIngredientesSeleccionados(prev =>
       prev.map(i => i.ingrediente.id === ingredienteId ? { ...i, cantidad } : i)
     )
   }
-
+ 
   const getUnidadSimbolo = (id: number | null | undefined) =>
     id ? unidades.find(u => u.id === id)?.simbolo ?? '' : ''
-
+ 
+  const aplicarPrecioSugerido = () => {
+    setPrecioBase(precioSugerido.toFixed(2))
+  }
+ 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setValidacionError(null)
-
+ 
     if (esManufacturado && ingredientesSeleccionados.length === 0) {
       setValidacionError('Debe cargar un ingrediente para guardarlo')
       return
     }
-
+ 
     onSubmit({
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
@@ -89,9 +103,9 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       ingrediente_ids: esManufacturado ? ingredientesSeleccionados.map(i => i.ingrediente.id) : [],
     })
   }
-
+ 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className="block text-xs font-medium text-slate-400 mb-1">Nombre *</label>
@@ -106,8 +120,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           <input className="input-field" type="number" min="0" step="0.01" value={precioBase}
             onChange={e => setPrecioBase(e.target.value)} required />
         </div>
-
-        {/* Stock — solo si NO es manufacturado */}
+ 
         {!esManufacturado && (
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">Stock</label>
@@ -115,8 +128,8 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
               onChange={e => setStockCantidad(e.target.value)} />
           </div>
         )}
-
-        <div className={esManufacturado ? 'col-span-2' : 'col-span-2'}>
+ 
+        <div className="col-span-2">
           <label className="block text-xs font-medium text-slate-400 mb-1">Unidad de venta</label>
           <select className="input-field" value={unidadVentaId ?? ''} onChange={e => setUnidadVentaId(e.target.value ? Number(e.target.value) : null)}>
             <option value="">— Sin unidad (por pieza) —</option>
@@ -125,7 +138,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             ))}
           </select>
         </div>
-
+ 
         <div className="flex items-center gap-2">
           <input type="checkbox" checked={disponible} onChange={e => setDisponible(e.target.checked)} className="w-4 h-4 accent-brand-600" />
           <span className="text-sm text-slate-300">Disponible</span>
@@ -137,75 +150,136 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           <span className="text-sm text-slate-300">Es manufacturado</span>
         </div>
       </div>
-
-      {/* Ingredientes con cantidad — solo si es manufacturado */}
+ 
+      {/* ── Sección manufacturado ── */}
       {esManufacturado && (
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-2">
-            Ingredientes * <span className="text-slate-500">(al menos uno)</span>
-          </label>
-
-          {/* Lista de ingredientes disponibles para agregar */}
-          <div className="border border-border rounded-lg p-3 max-h-36 overflow-y-auto space-y-1 mb-3">
-            {ingredientesDisponibles.length === 0
-              ? <p className="text-slate-500 text-xs">No hay ingredientes cargados</p>
-              : ingredientesDisponibles.map(ing => {
-                const seleccionado = ingredientesSeleccionados.some(i => i.ingrediente.id === ing.id)
-                return (
-                  <label key={ing.id} className={`flex items-center gap-2 cursor-pointer rounded px-2 py-1 transition-colors ${
-                    seleccionado ? 'bg-brand-900/30' : 'hover:bg-surface/50'
-                  }`}>
-                    <input type="checkbox" checked={seleccionado}
-                      onChange={() => toggleIngrediente(ing)} className="w-3.5 h-3.5 accent-brand-600" />
-                    <span className="text-sm text-slate-300 flex-1">{ing.nombre}</span>
-                    <span className="text-xs text-slate-500">
-                      Stock: {ing.stock_disponible ?? 0} {getUnidadSimbolo(ing.unidad_medida_id)}
-                    </span>
-                    {ing.es_alergeno && (
-                      <span className="text-xs bg-red-900/40 text-red-300 px-1.5 rounded">Alérgeno</span>
-                    )}
-                  </label>
-                )
-              })
-            }
-          </div>
-
-          {/* Cantidades por ingrediente seleccionado */}
-          {ingredientesSeleccionados.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-400">Cantidad a usar por unidad de producto:</p>
-              {ingredientesSeleccionados.map(({ ingrediente, cantidad }) => {
-                const simbolo = getUnidadSimbolo(ingrediente.unidad_medida_id)
-                return (
-                  <div key={ingrediente.id} className="flex items-center gap-3 bg-surface rounded-lg px-3 py-2">
-                    <span className="text-sm text-slate-200 flex-1">{ingrediente.nombre}</span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0.001"
-                        step="0.001"
-                        value={cantidad}
-                        onChange={e => setCantidad(ingrediente.id, Number(e.target.value))}
-                        className="input-field w-24 text-right text-sm py-1"
-                      />
-                      <span className="text-xs text-slate-400 w-8">{simbolo}</span>
-                    </div>
-                    <button type="button" onClick={() => toggleIngrediente(ingrediente)}
-                      className="text-red-400 hover:text-red-300 text-xs">✕</button>
-                  </div>
-                )
-              })}
+        <>
+          {/* Lista de ingredientes */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2">
+              Ingredientes * <span className="text-slate-500">(al menos uno)</span>
+            </label>
+            <div className="border border-border rounded-lg p-3 max-h-36 overflow-y-auto space-y-1 mb-3">
+              {ingredientesDisponibles.length === 0
+                ? <p className="text-slate-500 text-xs">No hay ingredientes cargados</p>
+                : ingredientesDisponibles.map(ing => {
+                  const seleccionado = ingredientesSeleccionados.some(i => i.ingrediente.id === ing.id)
+                  return (
+                    <label key={ing.id} className={`flex items-center gap-2 cursor-pointer rounded px-2 py-1 transition-colors ${
+                      seleccionado ? 'bg-brand-900/30' : 'hover:bg-surface/50'
+                    }`}>
+                      <input type="checkbox" checked={seleccionado}
+                        onChange={() => toggleIngrediente(ing)} className="w-3.5 h-3.5 accent-brand-600" />
+                      <span className="text-sm text-slate-300 flex-1">{ing.nombre}</span>
+                      <span className="text-xs text-slate-500">
+                        ${ing.precio_unitario?.toFixed(2)} / {getUnidadSimbolo(ing.unidad_medida_id) || 'u'}
+                      </span>
+                      {ing.es_alergeno && (
+                        <span className="text-xs bg-red-900/40 text-red-300 px-1.5 rounded">Alérgeno</span>
+                      )}
+                    </label>
+                  )
+                })
+              }
             </div>
-          )}
-
+ 
+            {/* Cantidades por ingrediente */}
+            {ingredientesSeleccionados.length > 0 && (
+              <div className="space-y-2 mb-3">
+                <p className="text-xs font-medium text-slate-400">Cantidad por unidad de producto:</p>
+                {ingredientesSeleccionados.map(({ ingrediente, cantidad }) => {
+                  const simbolo = getUnidadSimbolo(ingrediente.unidad_medida_id)
+                  const subtotal = (ingrediente.precio_unitario ?? 0) * cantidad
+                  return (
+                    <div key={ingrediente.id} className="flex items-center gap-3 bg-surface rounded-lg px-3 py-2">
+                      <span className="text-sm text-slate-200 flex-1">{ingrediente.nombre}</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number" min="0.001" step="0.001" value={cantidad}
+                          onChange={e => setCantidad(ingrediente.id, Number(e.target.value))}
+                          className="input-field w-24 text-right text-sm py-1"
+                        />
+                        <span className="text-xs text-slate-400 w-8">{simbolo || 'u'}</span>
+                      </div>
+                      <span className="text-xs text-brand-400 font-medium w-20 text-right">
+                        = ${subtotal.toFixed(2)}
+                      </span>
+                      <button type="button" onClick={() => toggleIngrediente(ingrediente)}
+                        className="text-red-400 hover:text-red-300 text-xs">✕</button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+ 
+          {/* ── Calculadora integrada ── */}
+          <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
+            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">💰 Calculadora de precio</p>
+ 
+            {/* Detalle de costos */}
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between text-slate-400">
+                <span>Costo ingredientes:</span>
+                <span className="text-slate-200">${costoIngredientes.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-400">
+                <span>Costos operativos (alquiler, gas, etc.):</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">$</span>
+                  <input
+                    type="number" min="0" step="0.01" value={costoOperativo}
+                    onChange={e => setCostoOperativo(e.target.value)}
+                    className="w-24 bg-card border border-border rounded px-2 py-0.5 text-white text-sm text-right focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between text-slate-300 border-t border-border pt-1">
+                <span>Costo total:</span>
+                <span className="font-medium">${costoTotal.toFixed(2)}</span>
+              </div>
+            </div>
+ 
+            {/* Margen */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs text-slate-400">Margen de ganancia</label>
+                <span className="text-brand-400 font-bold text-sm">{margen}%</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input type="range" min="0" max="300" value={margen}
+                  onChange={e => setMargen(Number(e.target.value))}
+                  className="flex-1 accent-brand-600" />
+                <input type="number" min="0" max="1000" value={margen}
+                  onChange={e => setMargen(Number(e.target.value))}
+                  className="w-16 bg-card border border-border rounded px-2 py-0.5 text-white text-sm text-center focus:outline-none focus:border-brand-500" />
+              </div>
+            </div>
+ 
+            {/* Precio sugerido + botón aplicar */}
+            <div className="flex items-center justify-between bg-brand-900/20 border border-brand-800/50 rounded-lg px-4 py-3">
+              <div>
+                <p className="text-xs text-slate-400">Precio sugerido de venta</p>
+                <p className="text-2xl font-bold text-brand-400">${precioSugerido.toFixed(2)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={aplicarPrecioSugerido}
+                className="btn-primary py-2 px-4 text-sm"
+              >
+                Usar este precio →
+              </button>
+            </div>
+          </div>
+ 
           {validacionError && (
-            <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg mt-2">
+            <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">
               ⚠️ {validacionError}
             </p>
           )}
-        </div>
+        </>
       )}
-
+ 
       {/* Categorías */}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Categorías</label>
@@ -220,7 +294,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           ))}
         </div>
       </div>
-
+ 
       {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
       <div className="flex justify-end gap-3 pt-2">
         <button type="submit" className="btn-primary" disabled={isLoading}>
@@ -312,7 +386,6 @@ export default function ProductosPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
   const [mutError, setMutError] = useState<string | null>(null)
-  const [calculadoraProductoId, setCalculadoraProductoId] = useState<number | null>(null)
 
   const { data: productos = [], isLoading, isError } = useQuery({
     queryKey: ['productos', search, filtroDisponible, filtroCategoria],
@@ -462,10 +535,6 @@ export default function ProductosPage() {
                         <>
                           <button onClick={() => { setEditing(p); setMutError(null); setModalOpen(true) }}
                             className="btn-secondary py-1 px-3">Editar</button>
-                          {p.es_manufacturado && (
-                            <button onClick={() => setCalculadoraProductoId(p.id)}
-                              className="btn-secondary py-1 px-3 text-brand-400">💰 Precio</button>
-                          )}
                           <button onClick={() => { if (confirm('¿Eliminar?')) deleteMut.mutate(p.id) }}
                             className="btn-danger py-1 px-3">Eliminar</button>
                         </>
@@ -489,15 +558,6 @@ export default function ProductosPage() {
             onSubmit={handleSubmit}
             isLoading={createMut.isPending || updateMut.isPending}
             error={mutError}
-          />
-        </Modal>
-      )}
-
-      {calculadoraProductoId && (
-        <Modal isOpen={true} onClose={() => setCalculadoraProductoId(null)} title="Calculadora de precio sugerido">
-          <CalculadoraPrecio
-            productoId={calculadoraProductoId}
-            onClose={() => setCalculadoraProductoId(null)}
           />
         </Modal>
       )}

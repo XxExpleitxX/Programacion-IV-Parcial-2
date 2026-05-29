@@ -49,6 +49,8 @@ class IngredienteCreate(BaseModel):
     descripcion: Optional[str] = None
     es_alergeno: bool = False
     precio_unitario: float = 0.0
+    stock_disponible: int = 0.0
+    unidad_medida_id: Optional[int] = None
 
     @field_validator("nombre")
     @classmethod
@@ -63,6 +65,8 @@ class IngredienteUpdate(BaseModel):
     descripcion: Optional[str] = None
     es_alergeno: Optional[bool] = None
     precio_unitario: Optional[float] = None
+    stock_disponible: Optional[int] = None
+    unidad_medida_id: Optional[int] = None
 
 
 class IngredienteRead(BaseModel):
@@ -71,6 +75,8 @@ class IngredienteRead(BaseModel):
     descripcion: Optional[str] = None
     es_alergeno: bool
     precio_unitario: float
+    stock_disponible: int
+    unidad_medida_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
