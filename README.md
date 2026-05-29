@@ -4,7 +4,9 @@ Aplicación fullstack que integra FastAPI (backend), React + TypeScript (fronten
 
 ## 🎥 Video de presentación
 
-> _Subir el link al video aquí después de grabarlo._
+Link Video:
+
+https://youtu.be/OqynLC-KjSQ
 
 ---
 
