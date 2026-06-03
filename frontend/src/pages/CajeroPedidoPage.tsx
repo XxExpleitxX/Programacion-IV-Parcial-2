@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pedidosApi, productosApi } from '../api'
 import type { Pedido, DetallePedido, Producto } from '../types'
 import { useAuth } from '../context/AuthContext'
+import { useEffect } from 'react'
 
 // ── FSM ───────────────────────────────────────────────────────────────────
 
@@ -257,6 +258,34 @@ export default function CajeroPedidosPage() {
     },
     onError: (err: Error) => alert(err.message),
   })
+
+  // ── WebSocket: refresca la lista cuando cambia un estado ──
+  useEffect(() => {
+    let ws: WebSocket
+    let reconnectTimer: ReturnType<typeof setTimeout>
+    let cerrado = false
+
+    function conectar() {
+      ws = new WebSocket('ws://localhost:8000/pedidos/cocina/ws')
+
+      ws.onmessage = () => {
+        // un pedido cambió de estado → recargo la lista del cajero
+        queryClient.invalidateQueries({ queryKey: ['pedidos-cajero'] })
+      }
+
+      ws.onclose = () => {
+        if (!cerrado) reconnectTimer = setTimeout(conectar, 3000) // reintenta a los 3s
+      }
+    }
+
+    conectar()
+
+    return () => {            // limpieza al salir de la página
+      cerrado = true
+      clearTimeout(reconnectTimer)
+      ws?.close()
+    }
+  }, [queryClient])
 
   const ORDEN_ESTADOS = ['EN_PREP', 'CONFIRMADO', 'PENDIENTE', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO']
   const pedidosOrdenados = [...pedidos].sort(
