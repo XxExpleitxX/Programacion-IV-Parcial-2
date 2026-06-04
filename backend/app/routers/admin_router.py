@@ -70,8 +70,8 @@ def activar_usuario(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     usuario.disabled = False
-    uow.session.add(usuario)
-    uow.commit()
+    uow.usuarios.add(usuario)
+    uow.flush()   # commit lo hace el UoW; flush para que refresh vea el cambio
     uow.refresh(usuario)
     return usuario
 
@@ -86,8 +86,8 @@ def desactivar_usuario(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     usuario.disabled = True
-    uow.session.add(usuario)
-    uow.commit()
+    uow.usuarios.add(usuario)
+    uow.flush()   # commit lo hace el UoW; flush para que refresh vea el cambio
     uow.refresh(usuario)
     return usuario
 
@@ -112,7 +112,7 @@ def asignar_rol(
 
     if data.rol_codigo.upper() not in usuario.roles:
         uow.usuarios.assign_role(usuario_id, data.rol_codigo.upper())
-        uow.commit()
+        uow.flush()   # commit lo hace el UoW; flush para que refresh vea el cambio
         uow.refresh(usuario)
 
     return usuario
@@ -131,6 +131,6 @@ def quitar_rol(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     uow.usuarios.remove_role(usuario_id, rol_codigo.upper())
-    uow.commit()
+    uow.flush()   # commit lo hace el UoW; flush para que refresh vea el cambio
     uow.refresh(usuario)
     return usuario

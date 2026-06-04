@@ -1,7 +1,9 @@
 """
-Router de autenticación — sin `with uow:` en los endpoints,
-el commit lo maneja get_uow() via __exit__ solo en caso de error (rollback).
-Los services de auth hacen commit internamente donde lo necesitan.
+Router de autenticación.
+
+CAMBIO (devolución del profe): ya NO se llama uow.commit() en los endpoints.
+El commit es automático (lo hace el Unit of Work al terminar bien el request).
+El login no escribe en la BD (solo lee y setea la cookie), así que no necesita commit.
 """
 
 from typing import Annotated, List
@@ -40,9 +42,8 @@ def _set_auth_cookie(response: Response, token: Token):
 @router.post("/register", response_model=UsuarioPublic, status_code=status.HTTP_201_CREATED)
 def register(data: UsuarioCreate, uow: UoWDep):
     """Registra un usuario nuevo. Rol CLIENT asignado por defecto."""
-    resultado = registrar_usuario(uow, data)
-    uow.commit()  # ✅ commit explícito
-    return resultado
+    # Sin uow.commit(): el UoW comitea solo al terminar bien el request.
+    return registrar_usuario(uow, data)
 
 
 # ─── Login ────────────────────────────────────────────────────────────────────
@@ -107,9 +108,8 @@ def deactivate_user(
     _: Annotated[Usuario, Depends(require_role(["ADMIN"]))],
     uow: UoWDep,
 ):
-    resultado = set_disabled(uow, usuario_id, disabled=True)
-    uow.commit()
-    return resultado
+    # Sin uow.commit(): el cambio se persiste automáticamente al cerrar el request.
+    return set_disabled(uow, usuario_id, disabled=True)
 
 
 @router.post("/admin/usuarios/{usuario_id}/activar", response_model=UsuarioPublic)
@@ -118,6 +118,4 @@ def activate_user(
     _: Annotated[Usuario, Depends(require_role(["ADMIN"]))],
     uow: UoWDep,
 ):
-    resultado = set_disabled(uow, usuario_id, disabled=False)
-    uow.commit()
-    return resultado
+    return set_disabled(uow, usuario_id, disabled=False)

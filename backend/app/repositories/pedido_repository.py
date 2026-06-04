@@ -1,5 +1,9 @@
 """
-PedidoRepository — operaciones de BD para Pedido, DetallePedido e Historial.
+Repositorios de Pedido — TODA consulta a la BD vive acá (no en el service).
+
+Devolución del profe:
+  - "Consultas a la db deben estar en los repositorios, no en el service."
+  - "Crear HistorialEstadoPedidoRepository y usarlo en vez de usar la session."
 """
 
 from typing import Optional, List
@@ -16,26 +20,37 @@ class PedidoRepository(BaseRepository[Pedido]):
         super().__init__(session, Pedido)
 
     def get_by_usuario(self, usuario_id: int) -> List[Pedido]:
+        """Pedidos de un cliente (sin los borrados), más nuevos primero."""
         return self.session.exec(
             select(Pedido)
             .where(Pedido.usuario_id == usuario_id)
-            .where(Pedido.deleted_at == None)
+            .where(Pedido.deleted_at == None)            # noqa: E711
             .order_by(Pedido.created_at.desc())
         ).all()
+
+    def get_all_active(self, estado: Optional[str] = None) -> List[Pedido]:
+        """
+        Todos los pedidos activos (ADMIN/PEDIDOS), con filtro opcional por estado.
+        ANTES esta query estaba en el service → ahora vive donde corresponde: el repo.
+        """
+        query = select(Pedido).where(Pedido.deleted_at == None)   # noqa: E711
+        if estado:
+            query = query.where(Pedido.estado_codigo == estado.upper())
+        return self.session.exec(query.order_by(Pedido.created_at.desc())).all()
 
     def get_with_detalles(self, pedido_id: int) -> Optional[Pedido]:
         pedido = self.session.get(Pedido, pedido_id)
         if pedido:
-            # Carga explícita de detalles
-            _ = pedido.detalles
+            _ = pedido.detalles   # fuerza la carga de la relación
         return pedido
 
 
-class DetallePedidoRepository:
+class DetallePedidoRepository(BaseRepository[DetallePedido]):
     def __init__(self, session: Session):
-        self.session = session
+        super().__init__(session, DetallePedido)
 
     def bulk_create(self, detalles: List[DetallePedido]) -> None:
+        """Agrega varios detalles de una (el commit lo hace el UoW)."""
         for d in detalles:
             self.session.add(d)
 
@@ -45,12 +60,15 @@ class DetallePedidoRepository:
         ).all()
 
 
-class HistorialRepository:
+class HistorialEstadoPedidoRepository(BaseRepository[HistorialEstadoPedido]):
+    """
+    Audit Trail — SOLO permite INSERT (append-only). Nunca update ni delete.
+    El service usa uow.historial.append(...) en lugar de tocar la session.
+    """
     def __init__(self, session: Session):
-        self.session = session
+        super().__init__(session, HistorialEstadoPedido)
 
     def append(self, registro: HistorialEstadoPedido) -> HistorialEstadoPedido:
-        """SOLO INSERT — nunca update ni delete (RN-03)."""
         self.session.add(registro)
         return registro
 

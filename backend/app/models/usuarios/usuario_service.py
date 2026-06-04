@@ -42,7 +42,7 @@ def registrar_usuario(uow: UnitOfWork, data: UsuarioCreate) -> Usuario:
 
     # Asigna rol CLIENT por defecto
     uow.usuarios.assign_role(usuario.id, "CLIENT")
-    uow.commit()
+    uow.flush()  # el service nunca comitea; el UoW lo hace solo
     uow.refresh(usuario)
     return usuario
 
@@ -91,7 +91,7 @@ def set_disabled(uow: UnitOfWork, usuario_id: int, disabled: bool) -> Usuario:
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     usuario.disabled = disabled
-    uow.commit()
+    uow.flush()  # el service nunca comitea; el UoW lo hace solo
     uow.refresh(usuario)
     return usuario
 

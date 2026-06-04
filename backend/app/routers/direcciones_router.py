@@ -1,17 +1,20 @@
 """
 Router de DireccionEntrega.
 
+CAMBIOS (devolución del profe):
+  - Ya NO se llama uow.commit() (commit automático del UoW).
+  - Ya NO se usa uow.session directamente: todo pasa por uow.direcciones.
+
 Endpoints:
-  POST   /direcciones/              → crear dirección
-  GET    /direcciones/              → listar mis direcciones
+  POST   /direcciones/               → crear dirección
+  GET    /direcciones/               → listar mis direcciones
   PATCH  /direcciones/{id}/principal → marcar como principal
-  DELETE /direcciones/{id}          → soft delete
+  DELETE /direcciones/{id}           → soft delete
 """
 
 from datetime import datetime
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Path, status
-from sqlmodel import select
 
 from app.core.security import require_authenticated
 from app.models.usuarios.usuario import Usuario
@@ -31,10 +34,10 @@ def crear_direccion(
     usuario: Usuario = Depends(require_authenticated),
 ):
     direccion = DireccionEntrega(**data.model_dump(), usuario_id=usuario.id)
-    uow.session.add(direccion)
-    uow.commit()
+    uow.direcciones.add(direccion)      # antes: uow.session.add(...)
+    uow.flush()                          # obtiene el id (sin commitear)
     uow.refresh(direccion)
-    return direccion
+    return direccion                     # commit automático al cerrar el request
 
 
 @router.get("/", response_model=List[DireccionRead])
@@ -42,11 +45,7 @@ def listar_direcciones(
     uow: UoWDep,
     usuario: Usuario = Depends(require_authenticated),
 ):
-    return uow.session.exec(
-        select(DireccionEntrega)
-        .where(DireccionEntrega.usuario_id == usuario.id)
-        .where(DireccionEntrega.deleted_at == None)
-    ).all()
+    return uow.direcciones.get_by_usuario(usuario.id)   # query en el repo, no acá
 
 
 @router.patch("/{direccion_id}/principal", response_model=DireccionRead)
@@ -56,24 +55,18 @@ def marcar_principal(
     usuario: Usuario = Depends(require_authenticated),
 ):
     """Marca una dirección como principal y desmarca las demás."""
-    direccion = uow.session.get(DireccionEntrega, direccion_id)
-    if not direccion or direccion.usuario_id != usuario.id or direccion.deleted_at is not None:
+    direccion = uow.direcciones.get_propia(direccion_id, usuario.id)
+    if not direccion:
         raise HTTPException(status_code=404, detail="Dirección no encontrada.")
 
-    # Desmarcar todas las del usuario
-    todas = uow.session.exec(
-        select(DireccionEntrega)
-        .where(DireccionEntrega.usuario_id == usuario.id)
-        .where(DireccionEntrega.deleted_at == None)
-    ).all()
-    for d in todas:
+    # Desmarcar todas las del usuario y marcar la elegida
+    for d in uow.direcciones.get_by_usuario(usuario.id):
         d.es_principal = False
-        uow.session.add(d)
+        uow.direcciones.add(d)
 
-    # Marcar la seleccionada
     direccion.es_principal = True
-    uow.session.add(direccion)
-    uow.commit()
+    uow.direcciones.add(direccion)
+    uow.flush()
     uow.refresh(direccion)
     return direccion
 
@@ -85,9 +78,8 @@ def eliminar_direccion(
     usuario: Usuario = Depends(require_authenticated),
 ):
     """Soft delete — marca deleted_at."""
-    direccion = uow.session.get(DireccionEntrega, direccion_id)
-    if not direccion or direccion.usuario_id != usuario.id or direccion.deleted_at is not None:
+    direccion = uow.direcciones.get_propia(direccion_id, usuario.id)
+    if not direccion:
         raise HTTPException(status_code=404, detail="Dirección no encontrada.")
     direccion.deleted_at = datetime.utcnow()
-    uow.session.add(direccion)
-    uow.commit()
+    uow.direcciones.add(direccion)       # commit automático al cerrar el request

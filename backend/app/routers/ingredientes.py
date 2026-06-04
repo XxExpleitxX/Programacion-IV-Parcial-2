@@ -26,7 +26,7 @@ def listar_ingredientes(
     uow: UoWDep,
     user: Usuario = Depends(require_authenticated),
     offset: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    limit: Annotated[int, Query(ge=1, le=500)] = 200,
     nombre: Annotated[Optional[str], Query()] = None,
 ):
     return ingrediente_service.get_all(uow, offset, limit, nombre)
@@ -50,7 +50,6 @@ def crear_ingrediente(
     user: Usuario = Depends(require_admin_or_editor),
 ):
     resultado = ingrediente_service.create(uow, data)
-    uow.commit()  # ✅ UoW controla el commit
     return resultado
 
 
@@ -62,7 +61,6 @@ def actualizar_ingrediente(
     user: Usuario = Depends(require_admin_or_editor),
 ):
     resultado = ingrediente_service.update(uow, ingrediente_id, data)
-    uow.commit()  # ✅ UoW controla el commit
     return resultado
 
 
@@ -73,4 +71,3 @@ def eliminar_ingrediente(
     user: Usuario = Depends(require_admin),
 ):
     ingrediente_service.delete(uow, ingrediente_id)
-    uow.commit()  # ✅ UoW controla el commit

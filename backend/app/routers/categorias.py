@@ -60,7 +60,6 @@ def crear_categoria(
     user: Usuario = Depends(require_admin_or_editor),
 ):
     resultado = categoria_service.create(uow, data)
-    uow.commit()
     return resultado
 
 
@@ -72,7 +71,6 @@ def actualizar_categoria(
     user: Usuario = Depends(require_admin_or_editor),
 ):
     resultado = categoria_service.update(uow, categoria_id, data)
-    uow.commit()
     return resultado
 
 
@@ -83,4 +81,3 @@ def eliminar_categoria(
     user: Usuario = Depends(require_admin),
 ):
     categoria_service.delete(uow, categoria_id)
-    uow.commit()

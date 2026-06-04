@@ -62,7 +62,6 @@ def crear_producto(
     user: Usuario = Depends(require_admin_or_editor),
 ):
     resultado = producto_service.create(uow, data)
-    uow.commit()
     return resultado
 
 
@@ -74,7 +73,6 @@ def actualizar_producto(
     user: Usuario = Depends(require_admin_or_editor),
 ):
     resultado = producto_service.update(uow, producto_id, data)
-    uow.commit()
     return resultado
 
 
@@ -87,7 +85,6 @@ def actualizar_disponibilidad(
 ):
     """Activa o desactiva un producto. Permitido para ADMIN y STOCK."""
     resultado = producto_service.patch_disponibilidad(uow, producto_id, data.disponible)
-    uow.commit()
     return resultado
 
 
@@ -98,4 +95,3 @@ def eliminar_producto(
     user: Usuario = Depends(require_admin),
 ):
     producto_service.delete(uow, producto_id)
-    uow.commit()
