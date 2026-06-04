@@ -19,11 +19,8 @@ from app.repositories import (
     IngredienteRepository,
     ProductoRepository,
 )
-from app.repositories.pedido_repository import (
-    PedidoRepository,
-    DetallePedidoRepository,
-    HistorialEstadoPedidoRepository,   # 👈 renombrado (antes HistorialRepository)
-)
+from app.repositories.pedido_repository import PedidoRepository, DetallePedidoRepository
+from app.repositories.historial_estado_pedido_repository import HistorialEstadoPedidoRepository
 from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedidoRepository
 from app.repositories.direccion_repository import DireccionRepository
 from app.models.usuarios.usuario_repository import UsuarioRepository, RolRepository
