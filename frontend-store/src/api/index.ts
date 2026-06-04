@@ -1,0 +1,66 @@
+import axiosInstance from './axiosInstance'
+import type { Producto, Categoria, Pedido } from '../types'
+
+// ─── Productos ────────────────────────────────────────────
+export const productosApi = {
+  getAll: (params?: {
+    nombre?: string
+    categoria_id?: number
+    precio_min?: number
+    precio_max?: number
+    disponible?: boolean
+    offset?: number
+    limit?: number
+  }) => axiosInstance.get<Producto[]>('/productos/', { params }).then(r => r.data),
+
+  getById: (id: number) =>
+    axiosInstance.get<Producto>(`/productos/${id}`).then(r => r.data),
+}
+
+// ─── Categorias ───────────────────────────────────────────
+export const categoriasApi = {
+  getArbol: () =>
+    axiosInstance.get<Categoria[]>('/categorias/arbol').then(r => r.data),
+}
+
+// ─── Auth ─────────────────────────────────────────────────
+export const authApi = {
+  login: async (username: string, password: string) => {
+    const res = await axiosInstance.post('/auth/login', { username, password })
+    const token = res.data.access_token
+    const me = await axiosInstance.get('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    return { token, user: me.data }
+  },
+  logout: () => axiosInstance.post('/auth/logout').catch(() => {}),
+  register: (data: {
+    username: string
+    nombre: string
+    apellido: string
+    email: string
+    password: string
+  }) => axiosInstance.post('/auth/register', data).then(r => r.data),
+}
+
+// ─── Pedidos ──────────────────────────────────────────────
+export const pedidosApi = {
+  crear: (data: {
+    forma_pago_codigo: string
+    notas?: string
+    direccion_id?: number | null
+    items: { producto_id: number; cantidad: number }[]
+  }) => axiosInstance.post<Pedido>('/pedidos/', data).then(r => r.data),
+
+  getMisPedidos: () =>
+    axiosInstance.get<Pedido[]>('/pedidos/').then(r => r.data),
+
+  getById: (id: number) =>
+    axiosInstance.get<Pedido>(`/pedidos/${id}`).then(r => r.data),
+
+  cancelar: (id: number, motivo: string) =>
+    axiosInstance.post<Pedido>(`/pedidos/${id}/estado`, {
+      estado_hacia: 'CANCELADO',
+      motivo,
+    }).then(r => r.data),
+}
