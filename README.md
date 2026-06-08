@@ -64,14 +64,16 @@ proyecto_parcial/
 │       │   ├── producto_repository.py
 │       │   ├── ingrediente_repository.py
 │       │   ├── pedido_repository.py
+│       │   ├── historial_estado_pedido_repository.py
+│       │   ├── catalogo_repository.py
+│       │   ├── direccion_repository.py
 │       │   └── usuario_repository.py
 │       │
 │       ├── services/
 │       │   ├── pedido_service.py
 │       │   ├── producto_service.py
 │       │   ├── categoria_service.py
-│       │   ├── ingrediente_service.py
-│       │   └── auth_service.py
+│       │   └── ingrediente_service.py
 │       │
 │       ├── schemas/
 │       │   └── pago_schema.py
@@ -91,14 +93,60 @@ proyecto_parcial/
 │           ├── seed_formas_pago.py
 │           └── seed_productos.py
 │
-└── frontend/
+├── frontend-admin/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   │
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── index.css
+│       │
+│       ├── api/
+│       │   ├── axiosInstance.ts
+│       │   └── index.ts
+│       │
+│       ├── context/
+│       │   └── AuthContext.tsx
+│       │
+│       ├── routes/
+│       │   └── PrivateRoute.tsx
+│       │
+│       ├── types/
+│       │   └── index.ts
+│       │
+│       ├── utils/
+│       │   └── categorias.ts
+│       │
+│       ├── components/
+│       │   └── Modal.tsx
+│       │
+│       └── pages/
+│           ├── LoginPage.tsx
+│           ├── CategoriasPage.tsx
+│           ├── IngredientesPage.tsx
+│           ├── ProductosPage.tsx
+│           ├── ProductoDetallePage.tsx
+│           └── CajeroPedidoPage.tsx
+│
+└── frontend-store/
     ├── index.html
     ├── package.json
     ├── vite.config.ts
     ├── tsconfig.json
+    ├── tsconfig.app.json
     ├── tsconfig.node.json
     ├── tailwind.config.js
     ├── postcss.config.js
+    │
+    ├── public/
+    │   ├── favicon.svg
+    │   └── icons.svg
     │
     └── src/
         ├── main.tsx
@@ -109,28 +157,23 @@ proyecto_parcial/
         │   ├── axiosInstance.ts
         │   └── index.ts
         │
-        ├── context/
-        │   └── AuthContext.tsx
-        │
-        ├── routes/
-        │   └── PrivateRoute.tsx
+        ├── store/
+        │   ├── authStore.ts
+        │   └── carritoStore.ts
         │
         ├── types/
         │   └── index.ts
         │
-        ├── utils/
-        │   └── categorias.ts
-        │
         ├── components/
-        │   └── Modal.tsx
+        │   └── ProductoCard.tsx
         │
         └── pages/
-            ├── LoginPage.tsx
-            ├── CategoriasPage.tsx
-            ├── IngredientesPage.tsx
-            ├── ProductosPage.tsx
+            ├── HomePage.tsx
             ├── ProductoDetallePage.tsx
-            └── CajeroPedidoPage.tsx
+            ├── CarritoPage.tsx
+            ├── CheckoutPage.tsx
+            ├── MisPedidosPage.tsx
+            └── LoginPage.tsx
 ```
 
 ---
