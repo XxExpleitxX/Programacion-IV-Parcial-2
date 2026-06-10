@@ -3,12 +3,15 @@ Servicio de usuarios — lógica de negocio de autenticación y gestión.
 No conoce FastAPI ni HTTP: solo recibe datos, opera sobre la UoW y retorna entidades.
 """
 
+import logging
+from datetime import timedelta
 from fastapi import HTTPException, status
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.config import settings
 from app.models.usuarios.usuario import Usuario, UsuarioCreate, Token
 from app.unit_of_work import UnitOfWork
-from datetime import timedelta
+
+logger = logging.getLogger("app.auth")   # 👈 para loguear el motivo del fallo (solo en el servidor)
 
 
 def registrar_usuario(uow: UnitOfWork, data: UsuarioCreate) -> Usuario:
@@ -16,7 +19,7 @@ def registrar_usuario(uow: UnitOfWork, data: UsuarioCreate) -> Usuario:
     Registra un usuario nuevo.
     - Valida username y email únicos
     - Hashea la contraseña
-    - Asigna rol CLIENT por defecto
+    - Asigna rol CLIENTE por defecto
     """
     if uow.usuarios.get_by_username(data.username):
         raise HTTPException(
@@ -40,9 +43,9 @@ def registrar_usuario(uow: UnitOfWork, data: UsuarioCreate) -> Usuario:
     uow.usuarios.add(usuario)
     uow.flush()  # necesario para obtener el id antes del commit
 
-    # Asigna rol CLIENT por defecto
+    # Asigna rol CLIENTE
     uow.usuarios.assign_role(usuario.id, "CLIENT")
-    uow.flush()  # el service nunca comitea; el UoW lo hace solo
+    uow.flush()
     uow.refresh(usuario)
     return usuario
 
@@ -53,17 +56,34 @@ def autenticar_usuario(uow: UnitOfWork, username: str, password: str) -> Token:
     - Busca el usuario por username
     - Verifica la contraseña con bcrypt
     - Genera token con sub=username y roles en el payload
+
+    Nota de seguridad: la respuesta al cliente es SIEMPRE genérica
+    ("Usuario o contraseña incorrectos") para evitar user enumeration.
+    El motivo real se registra solo en el log del servidor.
     """
     usuario = uow.usuarios.get_by_username(username)
 
-    if not usuario or not verify_password(password, usuario.hashed_password):
+    # Caso 1: el usuario no existe
+    if not usuario:
+        logger.warning("Login fallido: el usuario '%s' no existe", username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario o contraseña incorrectos",
+            detail="Usuario o contraseña incorrectos",   # mensaje genérico
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Caso 2: existe pero la contraseña no coincide
+    if not verify_password(password, usuario.hashed_password):
+        logger.warning("Login fallido: contraseña incorrecta para '%s'", username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario o contraseña incorrectos",   # mismo mensaje genérico
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Caso 3: credenciales OK pero la cuenta está desactivada
     if usuario.disabled:
+        logger.warning("Login fallido: cuenta desactivada '%s'", username)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cuenta desactivada",

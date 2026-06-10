@@ -9,7 +9,6 @@ const ESTADO_LABELS: Record<string, string> = {
   PENDIENTE:  '🕐 Pendiente',
   CONFIRMADO: '✓ Confirmado',
   EN_PREP:    '🍳 En preparación',
-  EN_CAMINO:  '🚚 En camino',
   ENTREGADO:  '✅ Entregado',
   CANCELADO:  '✗ Cancelado',
 }
@@ -18,7 +17,6 @@ const ESTADO_COLORS: Record<string, string> = {
   PENDIENTE:  'bg-yellow-900/40 text-yellow-300',
   CONFIRMADO: 'bg-blue-900/40 text-blue-300',
   EN_PREP:    'bg-orange-900/40 text-orange-300',
-  EN_CAMINO:  'bg-purple-900/40 text-purple-300',
   ENTREGADO:  'bg-green-900/40 text-green-300',
   CANCELADO:  'bg-red-900/40 text-red-300',
 }

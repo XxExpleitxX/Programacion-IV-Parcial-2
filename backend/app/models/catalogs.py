@@ -25,7 +25,7 @@ class FormaPago(SQLModel, table=True):
 class EstadoPedido(SQLModel, table=True):
     __tablename__ = "estados_pedido"
 
-    # PK semántica: "PENDIENTE" | "CONFIRMADO" | "EN_PREP" | "EN_CAMINO" | "ENTREGADO" | "CANCELADO"
+    # PK semántica: "PENDIENTE" | "CONFIRMADO" | "EN_PREP" | "ENTREGADO" | "CANCELADO"
     codigo:      str  = Field(primary_key=True, max_length=20)
     descripcion: str  = Field(max_length=80)
     orden:       int  = Field()           # para ordenar en UI

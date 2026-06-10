@@ -12,8 +12,7 @@ CAMBIOS (devolución del profe):
 FSM:
   PENDIENTE  → CONFIRMADO | CANCELADO
   CONFIRMADO → EN_PREP    | CANCELADO
-  EN_PREP    → EN_CAMINO  | CANCELADO  (cancelar desde acá: solo ADMIN/PEDIDOS)
-  EN_CAMINO  → ENTREGADO
+  EN_PREP    → ENTREGADO  | CANCELADO  (cancelar desde acá: solo ADMIN/PEDIDOS)
   ENTREGADO  → (terminal)
   CANCELADO  → (terminal)
 """
@@ -34,8 +33,7 @@ from app.unit_of_work import UnitOfWork
 FSM: dict[str, list[str]] = {
     "PENDIENTE":  ["CONFIRMADO", "CANCELADO"],
     "CONFIRMADO": ["EN_PREP",    "CANCELADO"],
-    "EN_PREP":    ["EN_CAMINO",  "CANCELADO"],
-    "EN_CAMINO":  ["ENTREGADO"],
+    "EN_PREP":    ["ENTREGADO",  "CANCELADO"],
     "ENTREGADO":  [],
     "CANCELADO":  [],
 }

@@ -36,7 +36,6 @@ def _roles(usuario: Usuario) -> list[str]:
 EVENTOS_WS = {
     "CONFIRMADO": "PEDIDO_CONFIRMADO",
     "EN_PREP":    "PEDIDO_EN_PREPARACION",
-    "EN_CAMINO":  "PEDIDO_EN_CAMINO",
     "ENTREGADO":  "PEDIDO_ENTREGADO",
     "CANCELADO":  "PEDIDO_CANCELADO",
 }
