@@ -4,12 +4,43 @@ No conoce FastAPI ni HTTP: solo recibe datos, opera sobre la UoW y retorna entid
 """
 
 import logging
-from datetime import timedelta
+import hashlib
+from datetime import datetime, timedelta
 from fastapi import HTTPException, status
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import (
+    hash_password, verify_password,
+    create_access_token, create_refresh_token, decode_token,
+)
 from app.core.config import settings
 from app.models.usuarios.usuario import Usuario, UsuarioCreate, Token
 from app.unit_of_work import UnitOfWork
+
+
+def _hash_token(token: str) -> str:
+    """SHA-256 del token (64 hex). Nunca guardamos el token crudo."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _emitir_tokens(uow: UnitOfWork, usuario: Usuario) -> Token:
+    """Crea access + refresh, guarda el hash del refresh y arma el Token."""
+    expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    access_token = create_access_token(
+        data={"sub": usuario.username, "roles": usuario.roles},
+        expires_delta=timedelta(minutes=expire_minutes),
+    )
+    refresh_token = create_refresh_token(data={"sub": usuario.username})
+    expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    uow.refresh_tokens.create(
+        usuario_id=usuario.id,
+        token_hash=_hash_token(refresh_token),
+        expires_at=expires_at,
+    )
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=expire_minutes * 60,
+    )
 
 logger = logging.getLogger("app.auth")   # 👈 para loguear el motivo del fallo (solo en el servidor)
 
@@ -89,20 +120,44 @@ def autenticar_usuario(uow: UnitOfWork, username: str, password: str) -> Token:
             detail="Cuenta desactivada",
         )
 
+    # Credenciales OK → emitir access + refresh (y guardar el refresh)
+    return _emitir_tokens(uow, usuario)
+
+
+def refrescar_token(uow: UnitOfWork, refresh_token: str) -> Token:
+    """
+    Valida un refresh token y emite un nuevo access token.
+    - Verifica que el JWT sea válido y de tipo 'refresh'
+    - Verifica que esté guardado, no revocado y no expirado
+    """
+    payload = decode_token(refresh_token)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Refresh token inválido")
+
+    stored = uow.refresh_tokens.get_valid(_hash_token(refresh_token))
+    if not stored:
+        raise HTTPException(status_code=401, detail="Refresh token inválido o revocado")
+
+    usuario = uow.usuarios.get_by_username(payload.get("sub"))
+    if not usuario or usuario.disabled:
+        raise HTTPException(status_code=401, detail="Usuario inválido")
+
     expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
     access_token = create_access_token(
-        data={
-            "sub": usuario.username,
-            "roles": usuario.roles,  # ["ADMIN"] o ["CLIENT"] etc.
-        },
+        data={"sub": usuario.username, "roles": usuario.roles},
         expires_delta=timedelta(minutes=expire_minutes),
     )
-
     return Token(
         access_token=access_token,
+        refresh_token=refresh_token,   # se mantiene el mismo refresh
         token_type="bearer",
         expires_in=expire_minutes * 60,
     )
+
+
+def revocar_refresh_token(uow: UnitOfWork, refresh_token: str) -> None:
+    """Invalida un refresh token (logout)."""
+    uow.refresh_tokens.revoke(_hash_token(refresh_token))
 
 
 def set_disabled(uow: UnitOfWork, usuario_id: int, disabled: bool) -> Usuario:

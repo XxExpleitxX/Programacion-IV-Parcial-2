@@ -131,9 +131,14 @@ class UsuarioPublic(SQLModel):
 
 
 class Token(SQLModel):
-    access_token: str
-    token_type:   str = "bearer"
-    expires_in:   int
+    access_token:  str
+    refresh_token: Optional[str] = None   # spec v6 — TokenResponse
+    token_type:    str = "bearer"
+    expires_in:    int
+
+
+class RefreshRequest(SQLModel):
+    refresh_token: str
 
 
 class LoginRequest(SQLModel):

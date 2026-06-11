@@ -16,7 +16,8 @@ from app.unit_of_work import UnitOfWork, get_uow
 # ─────────────────────────────────────────────
 ROL_ADMIN    = "ADMIN"
 ROL_EDITOR   = "STOCK"      # EDITOR → STOCK en el nuevo sistema
-ROL_CONSULTA = "CLIENT"     # CONSULTA → CLIENT en el nuevo sistema
+ROL_CONSULTA = "CLIENT" 
+ROL_PEDIDOS = "PEDIDOS"    
 
 ROLES_VALIDOS = {ROL_ADMIN, "STOCK", "PEDIDOS", "CLIENT"}
 

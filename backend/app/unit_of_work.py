@@ -24,6 +24,7 @@ from app.repositories.historial_estado_pedido_repository import HistorialEstadoP
 from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedidoRepository
 from app.repositories.direccion_repository import DireccionRepository
 from app.models.usuarios.usuario_repository import UsuarioRepository, RolRepository
+from app.repositories.refresh_token_repository import RefreshTokenRepository
 
 
 class UnitOfWork:
@@ -40,6 +41,7 @@ class UnitOfWork:
         self.direcciones:  DireccionRepository           | None = None   # 👈 nuevo
         self.usuarios:     UsuarioRepository             | None = None
         self.roles:        RolRepository                 | None = None
+        self.refresh_tokens: RefreshTokenRepository       | None = None
 
     def __enter__(self) -> "UnitOfWork":
         self.session      = Session(engine)
@@ -54,6 +56,7 @@ class UnitOfWork:
         self.direcciones  = DireccionRepository(self.session)
         self.usuarios     = UsuarioRepository(self.session)
         self.roles        = RolRepository(self.session)
+        self.refresh_tokens = RefreshTokenRepository(self.session)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

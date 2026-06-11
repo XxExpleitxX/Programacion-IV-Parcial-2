@@ -4,6 +4,7 @@ Módulo de seguridad — re-exporta todo desde los submódulos.
 from app.core.security.password_hasher import hash_password, verify_password
 from app.core.security.jwt_handler import (
     create_access_token,
+    create_refresh_token,
     decode_token,
     SECRET_KEY,
     ALGORITHM,
@@ -50,7 +51,7 @@ __all__ = [
     # password
     "hash_password", "verify_password",
     # jwt
-    "create_access_token", "decode_token", "decode_access_token",
+    "create_access_token", "create_refresh_token", "decode_token", "decode_access_token",
     "SECRET_KEY", "ALGORITHM", "ACCESS_TOKEN_EXPIRE_MINUTES",
     # oauth2
     "oauth2_scheme",
