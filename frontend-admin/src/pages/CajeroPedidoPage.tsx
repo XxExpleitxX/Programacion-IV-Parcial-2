@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pedidosApi, productosApi } from '../api'
 import type { Pedido, DetallePedido, Producto } from '../types'
 import { useAuth } from '../context/AuthContext'
-import { useEffect } from 'react'
+import { useOrderStatusWS } from '../hooks/Useorderstatusws'
 
 // ── FSM ───────────────────────────────────────────────────────────────────
 
@@ -255,33 +255,10 @@ export default function CajeroPedidosPage() {
     onError: (err: Error) => alert(err.message),
   })
 
-  // ── WebSocket: refresca la lista cuando cambia un estado ──
-  useEffect(() => {
-    let ws: WebSocket
-    let reconnectTimer: ReturnType<typeof setTimeout>
-    let cerrado = false
-
-    function conectar() {
-      ws = new WebSocket('ws://localhost:8000/pedidos/cocina/ws')
-
-      ws.onmessage = () => {
-        // un pedido cambió de estado → recargo la lista del cajero
-        queryClient.invalidateQueries({ queryKey: ['pedidos-cajero'] })
-      }
-
-      ws.onclose = () => {
-        if (!cerrado) reconnectTimer = setTimeout(conectar, 3000) // reintenta a los 3s
-      }
-    }
-
-    conectar()
-
-    return () => {            // limpieza al salir de la página
-      cerrado = true
-      clearTimeout(reconnectTimer)
-      ws?.close()
-    }
-  }, [queryClient])
+  // ── WebSocket: feed admin de todos los pedidos (hook con reconexión) ──
+  const { connected } = useOrderStatusWS({
+    onEvent: () => queryClient.invalidateQueries({ queryKey: ['pedidos-cajero'] }),
+  })
 
   const ORDEN_ESTADOS = ['EN_PREP', 'CONFIRMADO', 'PENDIENTE', 'ENTREGADO', 'CANCELADO']
   const pedidosOrdenados = [...pedidos].sort(
@@ -294,6 +271,11 @@ export default function CajeroPedidosPage() {
         <div>
           <h1 className="font-display text-3xl text-slate-100">Panel Cajero</h1>
           <p className="text-slate-400 text-sm mt-1">Gestión de pedidos — {user?.username}</p>
+          {!connected && (
+            <span className="inline-block mt-2 text-xs px-2 py-1 rounded bg-red-900/40 text-red-300">
+              ⚠ Sin conexión en tiempo real
+            </span>
+          )}
         </div>
         <select className="input-field max-w-xs" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
           <option value="">Todos los estados</option>

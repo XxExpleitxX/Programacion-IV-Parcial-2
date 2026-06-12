@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pedidosApi } from '../api/index'
 import { useAuth } from '../store/authStore'
 import { useState } from 'react'
-import { useEffect } from 'react'
+import { PedidoWSListener } from '../hooks/Useorderstatusws'
 
 const ESTADO_LABELS: Record<string, string> = {
   PENDIENTE:  '🕐 Pendiente',
@@ -49,31 +49,7 @@ export default function MisPedidosPage() {
     },
   })
 
-  useEffect(() => {
-    let ws: WebSocket
-    let reconnectTimer: ReturnType<typeof setTimeout>
-    let cerrado = false
-
-    function conectar() {
-      ws = new WebSocket('ws://localhost:8000/pedidos/cocina/ws')
-
-      ws.onmessage = () => {
-        queryClient.invalidateQueries({ queryKey: ['mis-pedidos'] })
-      }
-
-      ws.onclose = () => {
-        if (!cerrado) reconnectTimer = setTimeout(conectar, 3000)
-      }
-    }
-
-    conectar()
-
-    return () => {
-      cerrado = true
-      clearTimeout(reconnectTimer)
-      ws?.close()
-    }
-  }, [queryClient])
+  // El WS se maneja con <PedidoWSListener/> por cada pedido activo (abajo).
 
   const pedidosOrdenados = [...pedidos].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -82,6 +58,16 @@ export default function MisPedidosPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-white mb-6">📦 Mis pedidos</h1>
+
+      {pedidosOrdenados
+        .filter((p) => !['ENTREGADO', 'CANCELADO'].includes(p.estado_codigo))
+        .map((p) => (
+          <PedidoWSListener
+            key={p.id}
+            pedidoId={p.id}
+            onChange={() => queryClient.invalidateQueries({ queryKey: ['mis-pedidos'] })}
+          />
+        ))}
 
       {isLoading && <p className="text-gray-400 text-center py-12">Cargando pedidos...</p>}
       {isError && <p className="text-red-400 text-center py-12">Error al cargar los pedidos</p>}
