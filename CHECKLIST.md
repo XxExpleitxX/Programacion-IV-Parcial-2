@@ -1,34 +1,43 @@
-# Lista de Verificación del Proyecto Integrador
+# ✅ Checklist de Entrega — Food Store v6.0 (Rúbrica §15.1)
 
-## Backend (FastAPI + SQLModel)
+Estado real de cada ítem del checklist oficial de entrega.
 
-- [x] **Entorno:** Uso de `.venv`, `requirements.txt` y FastAPI funcionando en modo dev.
-- [x] **Modelado:** Tablas creadas con SQLModel incluyendo relaciones `Relationship` (1:N y N:N).
-  - Categoria → ProductoCategoria (1:N)
-  - Producto → ProductoCategoria (1:N) → Categoria (N:N)
-  - Producto → ProductoIngrediente (1:N) → Ingrediente (N:N)
-- [x] **Validación:** Uso de `Annotated`, `Query` y `Path` para reglas de negocio (longitudes, rangos, ge/le).
-- [x] **CRUD Persistente:** Endpoints funcionales para Crear, Leer, Actualizar y Borrar en MySQL (XAMPP).
-- [x] **Seguridad de Datos:** Implementación de `response_model` para no filtrar datos sensibles o innecesarios.
-- [x] **Estructura:** Código organizado por módulos (`routers`, `schemas`, `services`, `models`, `core`).
+**Leyenda:** ✅ Hecho · 🔶 Parcial · ❌ Falta · ⬜ A cargo del equipo en la entrega
 
-## Frontend (React + TypeScript + Tailwind)
+| Ítem | Descripción | Estado | Nota |
+|------|-------------|:------:|------|
+| **CE-01** | Link a repositorio GitHub público en la entrega | ⬜ | El proyecto es un repo git; falta publicarlo/entregar el link |
+| **CE-02** | README.md con instrucciones de setup funcionando en máquina limpia | ✅ | README reescrito: backend + ambos frontends + seed |
+| **CE-03** | `.env.example` completo (MercadoPago, Cloudinary y WebSocket documentadas) | ✅ | `backend/.env.example` creado con todas las variables |
+| **CE-05** | `python -m app.db.seed` carga datos iniciales (incluye UnidadMedida) | ✅ | Roles, estados, formas de pago, unidades y admin |
+| **CE-06** | Instalar e iniciar el frontend (`pnpm i` + `pnpm dev`) | 🔶 | Funciona con **npm** (`npm install` + `npm run dev`); son **dos** frontends (5173 y 5174) |
+| **CE-07** | `pip install -r requirements.txt` + `uvicorn app.main:app` sin errores | ✅ | App importa OK (54 rutas); requiere MySQL corriendo y `.env` |
+| **CE-08** | Swagger UI (`/docs`) con todos los endpoints (incluye `/uploads`) | ✅ | Todos los routers montados bajo `/api/v1` |
+| **CE-09** | Pago sandbox MP end-to-end + notifica vía WS | ❌ | **Backend completo** (`/pagos/crear` + webhook + idempotency); falta **integrar el SDK de MP en el frontend** (tokenización + llamada al endpoint) |
+| **CE-10** | Unit of Work correcto (ningún `service.session.commit()` directo) | ✅ | Auditado y pulido: nadie comitea a mano, solo el repo toca la BD |
+| **CE-11** | 5 Zustand stores tipados con `persist` (incluye `wsStore`) | ❌ | `frontend-store` tiene 2 (auth, carrito) con persist; `frontend-admin` usa Context; **falta `wsStore`** y llegar a 5 |
+| **CE-12** | WS: cambio de estado desde el panel admin actualiza la UI del cliente sin recargar | ✅ | Broadcast post-commit + hook `useOrderStatusWS` (invalida queries) |
+| **CE-13** | Cloudinary: subir imagen desde el panel admin y verla en el catálogo | ❌ | **Backend completo** (`/uploads/imagen` upload + destroy); falta el **input de subida en el panel admin** |
+| **CE-15** | Link a video demo (10–15 min) en README (mostrar WS y Cloudinary en vivo) | 🔶 | Link presente en el README; falta grabar/verificar que la demo muestre WS + Cloudinary |
+| **CE-16** | Repositorio público verificado con sesión cerrada | ⬜ | A verificar al momento de la entrega |
 
-- [x] **Setup:** Proyecto creado con Vite + TS y estructura de carpetas limpia.
-- [x] **Componentes:** Uso de componentes funcionales y Props debidamente tipadas con interfaces TypeScript.
-- [x] **Estilos:** Interfaz construida con clases de utilidad de Tailwind CSS 3, con componentes reutilizables (`btn-primary`, `card`, `input-field`).
-- [x] **Navegación:** Configuración de `react-router-dom` con ruta dinámica `/productos/:id` usando `useParams`.
-- [x] **Estado Local:** Uso de `useState` para manejo de formularios (campos de texto, checkboxes, listas de IDs).
+> **Nota sobre numeración:** la rúbrica oficial salta los ítems **CE-04** y **CE-14** (no figuran en la tabla del documento). Se respeta esa numeración.
 
-## Integración y Server State
+---
 
-- [x] **Lectura (useQuery):** Listados de Categorías, Ingredientes y Productos consumiendo datos reales de la API. Detalle de producto individual.
-- [x] **Escritura (useMutation):** Formularios de alta y edición para los tres módulos enviando datos al backend.
-- [x] **Sincronización:** Uso de `invalidateQueries` tras cada mutación exitosa para refrescar la UI automáticamente.
-- [x] **Feedback:** Estados de "Cargando..." y mensajes de "Error" gestionados visualmente en cada página.
+## 🎁 Bonus / Penalización (Rúbrica §14)
 
-## Video de Presentación
+| | Descripción | Estado |
+|---|-------------|:------:|
+| **Bonus +10** | Tests unitarios con pytest, cobertura > 60% (`test_pedidos`, `test_pagos`, `test_auth`) | ✅ | **Logrado** — 19 tests, cobertura ~74% (auth, pedidos, pagos, uploads, estadísticas) |
+| **Penalización −30%** | El proyecto no corre localmente siguiendo el README | ✅ Evitada | Corre con MySQL/XAMPP (uso aprobado por la cátedra) |
 
-- [ ] **Duración:** El video dura 15 minutos o menos.
-- [ ] **Audio/Video:** La voz es clara y la resolución de pantalla permite leer el código.
-- [ ] **Demo:** Se muestra el flujo completo desde la creación hasta la persistencia en la DB.
+---
+
+## 📌 Pendientes para llegar a "Excelente"
+
+1. **CE-09 — MercadoPago en el frontend:** integrar `@mercadopago/sdk-react` en el checkout para tokenizar la tarjeta y llamar a `POST /api/v1/pagos/crear` (el backend ya está listo).
+2. **CE-13 — Upload Cloudinary en el panel admin:** agregar el input de archivo (`FormData` → `POST /api/v1/uploads/imagen`) y guardar la `secure_url` en el producto.
+3. **CE-11 — Stores Zustand:** sumar `wsStore` y los stores faltantes hasta los 5 que pide el spec.
+4. **Dashboard de estadísticas en el frontend:** consumir los endpoints `/estadisticas/*` (ya implementados) con gráficos.
+5. **CE-15 / CE-01 / CE-16:** grabar el video mostrando WS + Cloudinary y publicar el repo.
