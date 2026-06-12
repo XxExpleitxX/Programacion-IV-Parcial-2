@@ -1,5 +1,5 @@
 """
-Servicio de uploads — Cloudinary (spec 10).
+Servicio de uploads — Cloudinary.
 Valida MIME y tamaño, sube y elimina imágenes. No conoce HTTP más allá de las
 excepciones de FastAPI que levanta ante input inválido.
 """
@@ -9,7 +9,7 @@ from fastapi import HTTPException, status, UploadFile
 
 from app.core.config import settings
 
-# Config del SDK al importar el módulo (spec 10.3)
+# Config del SDK al importar el módulo (instancia única). Usa las variables de entorno definidas en .env.
 cloudinary.config(
     cloud_name=settings.CLOUDINARY_CLOUD_NAME,
     api_key=settings.CLOUDINARY_API_KEY,
@@ -22,14 +22,14 @@ MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 async def subir_imagen(file: UploadFile, folder: str = "productos") -> dict:
-    # Validación de tipo (spec: jpeg/png/webp)
+    # Validación de tipo
     if file.content_type not in ALLOWED_MIME:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Formato no permitido: {file.content_type}. Solo JPEG, PNG o WebP.",
         )
     contenido = await file.read()
-    # Validación de tamaño (spec: max 5 MB)
+    # Validación de tamaño
     if len(contenido) > MAX_BYTES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

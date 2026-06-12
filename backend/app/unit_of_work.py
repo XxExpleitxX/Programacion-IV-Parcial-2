@@ -21,8 +21,9 @@ from app.repositories import (
 )
 from app.repositories.pedido_repository import PedidoRepository, DetallePedidoRepository
 from app.repositories.historial_estado_pedido_repository import HistorialEstadoPedidoRepository
-from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedidoRepository
+from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedidoRepository, UnidadMedidaRepository
 from app.repositories.pagos_repository import PagoRepository
+from app.repositories.estadisticas_repository import EstadisticasRepository
 from app.repositories.direccion_repository import DireccionRepository
 from app.models.usuarios.usuario_repository import UsuarioRepository, RolRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
@@ -36,12 +37,14 @@ class UnitOfWork:
         self.ingredientes: IngredienteRepository         | None = None
         self.productos:    ProductoRepository            | None = None
         self.pedidos:      PedidoRepository              | None = None
-        self.detalles:     DetallePedidoRepository       | None = None   # 👈 nuevo en el UoW
+        self.detalles:     DetallePedidoRepository       | None = None   
         self.historial:    HistorialEstadoPedidoRepository | None = None
-        self.formas_pago:  FormaPagoRepository           | None = None   # 👈 nuevo
-        self.pagos:        PagoRepository                | None = None   # 👈 nuevo
-        self.estados:      EstadoPedidoRepository        | None = None   # 👈 nuevo
-        self.direcciones:  DireccionRepository           | None = None   # 👈 nuevo
+        self.formas_pago:  FormaPagoRepository           | None = None   
+        self.pagos:        PagoRepository                | None = None
+        self.estadisticas: EstadisticasRepository        | None = None
+        self.estados:      EstadoPedidoRepository        | None = None
+        self.unidades:     UnidadMedidaRepository        | None = None
+        self.direcciones:  DireccionRepository           | None = None
         self.usuarios:     UsuarioRepository             | None = None
         self.roles:        RolRepository                 | None = None
         self.refresh_tokens: RefreshTokenRepository       | None = None
@@ -58,7 +61,9 @@ class UnitOfWork:
         self.historial    = HistorialEstadoPedidoRepository(self.session)
         self.formas_pago  = FormaPagoRepository(self.session)
         self.pagos        = PagoRepository(self.session)
+        self.estadisticas = EstadisticasRepository(self.session)
         self.estados      = EstadoPedidoRepository(self.session)
+        self.unidades     = UnidadMedidaRepository(self.session)
         self.direcciones  = DireccionRepository(self.session)
         self.usuarios     = UsuarioRepository(self.session)
         self.roles        = RolRepository(self.session)
@@ -70,7 +75,7 @@ class UnitOfWork:
         if exc_type is not None:
             self.session.rollback()
         else:
-            self.session.commit()        # 👈 commit automático (ya no se llama a mano)
+            self.session.commit()       
         self.session.close()
 
     # Estos métodos siguen existiendo por si se necesitan,

@@ -1,5 +1,5 @@
 """
-Router de uploads — Cloudinary (spec 5.5).
+Router de uploads — Cloudinary.
 POST   /uploads/imagen              → sube imagen (multipart/form-data), ADMIN
 DELETE /uploads/imagen/{public_id}  → elimina por public_id, ADMIN
 """

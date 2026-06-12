@@ -8,20 +8,22 @@ Uso en routers:
 
 from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
-from sqlmodel import Session, select
 
-from app.core.database import get_session
 from app.core.security import decode_access_token, get_token_from_request
 from app.models.usuarios.usuario import Usuario
+from app.unit_of_work import UnitOfWork, get_uow
 
 
 def get_current_user(
     request: Request,
-    session: Annotated[Session, Depends(get_session)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> Usuario:
     """
     Lee el token desde cookie o header, lo valida y devuelve el Usuario.
     Lanza 401 si el token es inválido o el usuario no existe.
+
+    El acceso a la BD pasa por el repositorio (uow.usuarios), nunca por la
+    sesión directa: una sola vía de acceso a datos en toda la app.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,7 +43,7 @@ def get_current_user(
     if not username:
         raise credentials_exception
 
-    usuario = session.exec(select(Usuario).where(Usuario.username == username)).first()
+    usuario = uow.usuarios.get_by_username(username)
     if usuario is None:
         raise credentials_exception
 

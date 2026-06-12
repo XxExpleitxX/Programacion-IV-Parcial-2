@@ -1,7 +1,7 @@
 """
-Seed único del sistema — carga TODOS los datos iniciales obligatorios.
+Seed del sistema — carga TODOS los datos iniciales obligatorios.
 
-Ejecutar (un solo comando, como pide el checklist CE-05):
+Ejecutar:
     python -m app.db.seed
 
 Carga, en orden:
@@ -12,14 +12,12 @@ Carga, en orden:
     5. Usuario admin    → admin@foodstore.com (username == email) / Admin1234!  (rol ADMIN)
 
 El commit es automático: lo hace el Unit of Work al cerrar el bloque `with`
-(si no hubo error). No se llama commit() a mano.
+(si no hubo error). No hay commits manuales.
 Es idempotente: si un registro ya existe, lo saltea.
 """
 
-from sqlmodel import select
-
 from app.core.security import hash_password
-from app.models.usuarios.usuario import Rol, Usuario, UsuarioRol
+from app.models.usuarios.usuario import Rol, Usuario
 from app.models.catalogs import FormaPago, EstadoPedido
 from app.models.unidad_medida import UnidadMedida
 from app.unit_of_work import UnitOfWork
@@ -33,7 +31,7 @@ ROLES = [
     Rol(codigo="CLIENT",  nombre="Cliente",       descripcion="Opera solo sus propios datos"),
 ]
 
-# ── 2. Estados del pedido (UML v7: 5 estados, sin EN_CAMINO) ──────────────────
+# ── 2. Estados del pedido ──────────────────
 ESTADOS_PEDIDO = [
     EstadoPedido(codigo="PENDIENTE",  descripcion="Pedido creado, pago pendiente", orden=1, es_terminal=False),
     EstadoPedido(codigo="CONFIRMADO", descripcion="Pago procesado y confirmado",   orden=2, es_terminal=False),
@@ -49,7 +47,7 @@ FORMAS_PAGO = [
     FormaPago(codigo="TRANSFERENCIA", descripcion="Transferencia bancaria",      habilitado=True),
 ]
 
-# ── 4. Unidades de medida (spec 12.2) ─────────────────────────────────────────
+# ── 4. Unidades de medida ─────────────────────────────────────────
 UNIDADES = [
     UnidadMedida(nombre="kilogramo", simbolo="kg",        tipo="peso"),
     UnidadMedida(nombre="gramo",     simbolo="g",         tipo="peso"),
@@ -65,7 +63,7 @@ ADMIN = {
     "nombre":   "Admin",
     "apellido": "Sistema",
     "email":    "admin@foodstore.com",
-    "password": "Admin1234!",            # spec 12.2 — cambiar en producción
+    "password": "Admin1234!",            
 }
 
 
@@ -98,11 +96,8 @@ def seed():
 
         print("── 4. Unidades de medida ──")
         for u in UNIDADES:
-            existe = uow.session.exec(
-                select(UnidadMedida).where(UnidadMedida.simbolo == u.simbolo)
-            ).first()
-            if not existe:
-                uow.session.add(u)
+            if not uow.unidades.get_by_simbolo(u.simbolo):
+                uow.unidades.add(u)
                 print(f"  ✅ {u.simbolo:9s} — {u.nombre}")
             else:
                 print(f"  ⏭️  ya existe: {u.simbolo}")
@@ -111,9 +106,7 @@ def seed():
         uow.flush()
 
         print("── 5. Usuario admin ──")
-        admin_existe = uow.session.exec(
-            select(Usuario).where(Usuario.username == ADMIN["username"])
-        ).first()
+        admin_existe = uow.usuarios.get_by_username(ADMIN["username"])
 
         if not admin_existe:
             admin = Usuario(
@@ -125,7 +118,7 @@ def seed():
             )
             uow.usuarios.add(admin)
             uow.flush()                       # genera admin.id (sin commitear)
-            uow.session.add(UsuarioRol(usuario_id=admin.id, rol_codigo="ADMIN"))
+            uow.usuarios.assign_role(admin.id, "ADMIN")
             print(f"  ✅ {ADMIN['email']} / {ADMIN['password']}")
         else:
             print("  ⏭️  el admin ya existe")

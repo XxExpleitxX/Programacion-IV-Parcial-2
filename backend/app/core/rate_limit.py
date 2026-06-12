@@ -1,10 +1,7 @@
 """
 Rate limiter en memoria — cuenta INTENTOS FALLIDOS por IP.
-
-Spec 4.3: 5 intentos fallidos por IP en 15 min en login/register → HTTP 429 + Retry-After.
-
-Nota: es en memoria, válido para un solo worker (uvicorn sin --workers).
-Para multi-worker habría que usar Redis. Para el TPI (un worker) alcanza.
+Si una IP supera el límite, bloquea por un tiempo (Retry-After).
+Usado para proteger endpoints sensibles a ataques de fuerza bruta, como login y register.
 """
 import time
 from fastapi import HTTPException, status
@@ -42,5 +39,5 @@ class RateLimiter:
         self._prune(key, now)
 
 
-# Instancia única compartida para login + register (spec 4.3)
+# Instancia única compartida para login + register
 login_limiter = RateLimiter(max_attempts=5, window_seconds=15 * 60)

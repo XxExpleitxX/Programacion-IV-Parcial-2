@@ -115,3 +115,31 @@ class AvanzarEstadoRequest(BaseModel):
         if estado == "CANCELADO" and not v:
             raise ValueError("motivo es obligatorio al cancelar un pedido")
         return v
+
+
+# ── Pagos — MercadoPago  ────────────────────────────────────────────
+
+class CrearPagoRequest(BaseModel):
+    """Datos que envía el frontend tras tokenizar la tarjeta con MP.js (PCI)."""
+    pedido_id:         int
+    token:             str               # token de tarjeta generado por MP.js
+    payment_method_id: str               # ej: 'visa', 'master'
+    installments:      int = 1           # cuotas
+    payer_email:       str
+    issuer_id:         Optional[str] = None
+
+
+class PagoResponse(BaseModel):
+    """Vista del pago registrado. Refleja la tabla Pago."""
+    id:                 int
+    pedido_id:          int
+    mp_payment_id:      Optional[int]
+    mp_status:          str
+    mp_status_detail:   Optional[str]
+    external_reference: str
+    transaction_amount: Decimal
+    payment_method_id:  Optional[str]
+    created_at:         datetime
+
+    class Config:
+        from_attributes = True

@@ -1,7 +1,7 @@
 /**
  * useOrderStatusWS — conexión WebSocket de seguimiento de pedidos.
  *
- * - Auth por query param ?token=<jwt> (como pide el spec, sección 9.1).
+ * - Auth por query param ?token=<jwt>.
  * - Con pedidoId  → se suscribe al canal de ESE pedido (cliente).
  * - Sin pedidoId  → feed "admin" de todos los pedidos (ADMIN/PEDIDOS).
  * - Reconexión exponencial (1s, 2s, 4s... tope 30s, hasta 10 intentos).

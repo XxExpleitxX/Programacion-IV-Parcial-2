@@ -1,5 +1,5 @@
 """
-Router de pagos — MercadoPago (spec 5.4).
+Router de pagos — MercadoPago.
 POST   /pagos/crear            → crea el pago con el token de tarjeta (CLIENT)
 POST   /pagos/webhook          → IPN de MercadoPago (público)
 GET    /pagos/{pedido_id}      → consulta el pago de un pedido (dueño/ADMIN)

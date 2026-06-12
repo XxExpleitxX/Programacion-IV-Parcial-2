@@ -3,7 +3,7 @@ Router de autenticación.
 
 - /api/v1 lo aporta el router padre en main.py.
 - access token (30 min) en cookie httpOnly + refresh token (7 días) en el body.
-- Rate limiting: 5 intentos fallidos por IP en 15 min en login/register → 429 (spec 4.3).
+- Rate limiting: 5 intentos fallidos por IP en 15 min en login/register → 429.
 - El commit es automático (Unit of Work).
 """
 

@@ -8,8 +8,9 @@ from app.routers.direcciones_router import router as direcciones_router
 from app.routers.admin_router import router as admin_router
 from app.routers.Umedida_router import router as umedida_router
 from app.routers.uploads_router import router as uploads_router
+from app.routers import pago_router
+from app.routers.estadisticas_router import router as estadisticas_router
 from app.core.database import create_db_and_tables
-from proyecto_parcial.backend.app.routers import pago_router
 
 
 @asynccontextmanager
@@ -44,5 +45,6 @@ api.include_router(admin_router)
 api.include_router(umedida_router)
 api.include_router(uploads_router)
 api.include_router(pago_router.router)  # Rutas de pago (MercadoPago)
+api.include_router(estadisticas_router)  # Dashboard de estadísticas (ADMIN)
 
 app.include_router(api)
