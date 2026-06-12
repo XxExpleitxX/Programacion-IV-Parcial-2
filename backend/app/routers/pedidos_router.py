@@ -88,20 +88,11 @@ async def avanzar_estado(
     uow: UoWDep,
     usuario: Usuario = Depends(require_authenticated),
 ):
+    # El broadcast WS lo dispara get_uow DESPUÉS del commit (RN-06),
+    # con el evento que encola el Service.
     pedido = PedidoService.avanzar_estado(
         uow, pedido_id, usuario.id, _roles(usuario), data
     )
-
-    # Aviso en tiempo real a las pantallas conectadas (cajero / cliente).
-    # Nota: el commit lo hace el UoW al cerrar el request; los clientes reaccionan
-    # haciendo un refetch (otra request), que ya lee los datos confirmados.
-    evento = EVENTOS_WS.get(pedido.estado_codigo)
-    if evento:
-        await manager.broadcast(evento, {
-            "pedido_id": pedido.id,
-            "estado": pedido.estado_codigo,
-        })
-
     return pedido
 
 
@@ -121,34 +112,48 @@ def get_historial(
 
 # ── WebSocket para seguimiento de pedido en tiempo real ────────────────────────
 
-@router.websocket("/cocina/ws")          # ruta completa: /pedidos/cocina/ws
-async def websocket_pedidos(websocket: WebSocket):
-    # 1. Token desde la cookie httpOnly (la misma del login)
-    token = websocket.cookies.get(settings.COOKIE_NAME)
-    if not token:
-        await websocket.accept()
-        await websocket.close(code=1008, reason="Falta token")
-        return
-
-    # 2. Validar el JWT
+@router.websocket("/ws")
+async def websocket_pedidos(
+    websocket: WebSocket,
+    token: str = Query(...),
+    pedido_id: Optional[int] = Query(None),
+):
+    """
+    WebSocket de seguimiento en tiempo real. Auth por query param ?token=<jwt>.
+      - Con ?pedido_id=N  → suscribe al canal de ESE pedido (cliente que lo sigue).
+      - Sin pedido_id     → feed "admin" de TODOS los pedidos (solo ADMIN/PEDIDOS).
+    Ej: ws://localhost:8000/api/v1/pedidos/ws?token=...&pedido_id=12
+    """
+    # 1. Validar el JWT que viene en el query param
     payload = decode_token(token)
     if not payload or not payload.get("sub"):
         await websocket.accept()
-        await websocket.close(code=1008, reason="Token inválido")
+        await websocket.close(code=1008, reason="Token invalido")
         return
 
-    # 3. Validar que el usuario exista y esté activo
+    # 2. Validar que el usuario exista y esté activo
     with UnitOfWork() as uow:
         user = uow.usuarios.get_by_username(payload["sub"])
         if not user or user.disabled:
             await websocket.accept()
-            await websocket.close(code=1008, reason="Usuario inválido o inactivo")
+            await websocket.close(code=1008, reason="Usuario invalido o inactivo")
             return
+        roles = user.roles
 
-    # 4. Registrar y mantener viva la conexión
-    await manager.connect(websocket)
+    # 3. Elegir canal: un pedido puntual, o el feed admin
+    if pedido_id is not None:
+        channel = str(pedido_id)
+    else:
+        if not any(r in ("ADMIN", "PEDIDOS") for r in roles):
+            await websocket.accept()
+            await websocket.close(code=1008, reason="Requiere rol ADMIN/PEDIDOS")
+            return
+        channel = "admin"
+
+    # 4. Registrar y mantener viva la conexión en ese canal
+    await manager.connect(websocket, channel)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, channel)

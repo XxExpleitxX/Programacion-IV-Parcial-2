@@ -22,9 +22,11 @@ from app.repositories import (
 from app.repositories.pedido_repository import PedidoRepository, DetallePedidoRepository
 from app.repositories.historial_estado_pedido_repository import HistorialEstadoPedidoRepository
 from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedidoRepository
+from app.repositories.pagos_repository import PagoRepository
 from app.repositories.direccion_repository import DireccionRepository
 from app.models.usuarios.usuario_repository import UsuarioRepository, RolRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.core.websocket import manager
 
 
 class UnitOfWork:
@@ -37,11 +39,14 @@ class UnitOfWork:
         self.detalles:     DetallePedidoRepository       | None = None   # 👈 nuevo en el UoW
         self.historial:    HistorialEstadoPedidoRepository | None = None
         self.formas_pago:  FormaPagoRepository           | None = None   # 👈 nuevo
+        self.pagos:        PagoRepository                | None = None   # 👈 nuevo
         self.estados:      EstadoPedidoRepository        | None = None   # 👈 nuevo
         self.direcciones:  DireccionRepository           | None = None   # 👈 nuevo
         self.usuarios:     UsuarioRepository             | None = None
         self.roles:        RolRepository                 | None = None
         self.refresh_tokens: RefreshTokenRepository       | None = None
+        # Eventos WS encolados durante la transacción → se emiten POST-commit (RN-06)
+        self.events: list[tuple[int, dict]] = []
 
     def __enter__(self) -> "UnitOfWork":
         self.session      = Session(engine)
@@ -52,6 +57,7 @@ class UnitOfWork:
         self.detalles     = DetallePedidoRepository(self.session)
         self.historial    = HistorialEstadoPedidoRepository(self.session)
         self.formas_pago  = FormaPagoRepository(self.session)
+        self.pagos        = PagoRepository(self.session)
         self.estados      = EstadoPedidoRepository(self.session)
         self.direcciones  = DireccionRepository(self.session)
         self.usuarios     = UsuarioRepository(self.session)
@@ -79,12 +85,21 @@ class UnitOfWork:
     def refresh(self, entity) -> None:
         self.session.refresh(entity)
 
+    def emit_pedido_event(self, pedido_id: int, evento: dict) -> None:
+        """Encola un evento WS para emitirlo DESPUÉS del commit (RN-06)."""
+        self.events.append((pedido_id, evento))
 
-def get_uow():
+
+async def get_uow():
     """
     Dependencia de FastAPI. Abre el UoW para el request y lo cierra al final.
-    Gracias al __exit__ de arriba, el commit/rollback es automático:
-    el router ya NO necesita llamar uow.commit().
+    - El commit/rollback es automático (vía __exit__).
+    - DESPUÉS del commit exitoso, emite por WebSocket los eventos encolados
+      durante la transacción (RN-06: broadcast post-commit, fuera del bloque UoW).
+      Si hubo excepción, el __exit__ hace rollback y NO se emite nada.
     """
     with UnitOfWork() as uow:
         yield uow
+    # Acá el bloque `with` ya cerró → commit hecho. Recién ahora notificamos.
+    for pedido_id, evento in uow.events:
+        await manager.broadcast_pedido(pedido_id, evento)

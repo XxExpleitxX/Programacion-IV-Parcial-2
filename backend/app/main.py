@@ -9,6 +9,7 @@ from app.routers.admin_router import router as admin_router
 from app.routers.Umedida_router import router as umedida_router
 from app.routers.uploads_router import router as uploads_router
 from app.core.database import create_db_and_tables
+from proyecto_parcial.backend.app.routers import pago_router
 
 
 @asynccontextmanager
@@ -31,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Todas las rutas cuelgan de /api/v1 (spec v6, sección 5) ──────────────────
+# ─── Todas las rutas cuelgan de /api/v1 ──────────────────
 api = APIRouter(prefix="/api/v1")
 api.include_router(auth.router)
 api.include_router(categorias.router)
@@ -42,5 +43,6 @@ api.include_router(direcciones_router)
 api.include_router(admin_router)
 api.include_router(umedida_router)
 api.include_router(uploads_router)
+api.include_router(pago_router.router)  # Rutas de pago (MercadoPago)
 
 app.include_router(api)

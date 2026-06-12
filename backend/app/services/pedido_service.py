@@ -176,6 +176,16 @@ class PedidoService:
             motivo       = data.motivo,
         ))
 
+        # ── Encolar evento WS para emitirlo DESPUÉS del commit (RN-06) ─────
+        uow.emit_pedido_event(pedido.id, {
+            "event":           "pedido_cancelado" if estado_hacia == "CANCELADO" else "estado_cambiado",
+            "pedido_id":       pedido.id,
+            "estado_anterior": estado_actual,
+            "estado_nuevo":    estado_hacia,
+            "usuario_id":      usuario_id,
+            "motivo":          data.motivo,
+        })
+
         uow.flush()
         uow.refresh(pedido)
         return pedido
