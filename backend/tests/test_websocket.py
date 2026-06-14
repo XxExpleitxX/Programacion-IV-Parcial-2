@@ -96,3 +96,19 @@ def test_ws_token_invalido_cierra_conexion(client):
         with client.websocket_connect("/api/v1/ws/pedidos/1?token=token-falso") as ws:
             ws.receive_text()
     assert exc.value.code == 1008
+
+
+def test_ws_token_expirado_cierra_4001(client):
+    # Un JWT expirado debe cerrar con close code 4001 (el front refresca y reconecta)
+    from datetime import datetime, timedelta, timezone
+    from jose import jwt
+    from app.core.security.jwt_handler import SECRET_KEY, ALGORITHM
+
+    expirado = jwt.encode(
+        {"sub": "cliente_test", "exp": datetime.now(timezone.utc) - timedelta(minutes=1)},
+        SECRET_KEY, algorithm=ALGORITHM,
+    )
+    with pytest.raises(WebSocketDisconnect) as exc:
+        with client.websocket_connect(f"/api/v1/ws/pedidos/1?token={expirado}") as ws:
+            ws.receive_text()
+    assert exc.value.code == 4001

@@ -42,6 +42,23 @@ def test_crear_producto_precio_negativo_rechazado(client, admin_headers):
     assert r.status_code == 422
 
 
+def test_delete_producto_borra_imagenes_cloudinary(client, admin_headers, monkeypatch):
+    # Al eliminar un producto, sus imágenes se borran del CDN (best-effort)
+    borrados = []
+    monkeypatch.setattr(
+        "cloudinary.uploader.destroy",
+        lambda pid, **kw: (borrados.append(pid), {"result": "ok"})[1],
+    )
+    r = client.post("/api/v1/productos/", headers=admin_headers, json={
+        "nombre": "Combo", "precio_base": 999,
+        "imagenes_url": ["https://res.cloudinary.com/demo/image/upload/v1/foodstore/productos/combo.jpg"],
+    })
+    pid = r.json()["id"]
+    d = client.delete(f"/api/v1/productos/{pid}", headers=admin_headers)
+    assert d.status_code == 204
+    assert "foodstore/productos/combo" in borrados
+
+
 def test_error_formato_rfc7807(client, admin_headers):
     # GET de un producto inexistente → 404 con {detail, code}
     r = client.get("/api/v1/productos/999999", headers=admin_headers)

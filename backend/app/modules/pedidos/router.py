@@ -20,7 +20,7 @@ from app.schemas.pago_schema import (
     PedidoCreate, PedidoRead, AvanzarEstadoRequest, HistorialRead
 )
 from app.schemas.pagination import Paginated
-from app.services.pedido_service import PedidoService
+from app.modules.pedidos.service import PedidoService
 from app.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])

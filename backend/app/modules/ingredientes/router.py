@@ -10,7 +10,7 @@ from typing import Annotated, Optional, List
 from fastapi import APIRouter, Depends, Query, Path, status
 from app.core.security import require_admin, require_admin_or_editor, require_authenticated
 from app.schemas import IngredienteCreate, IngredienteUpdate, IngredienteRead
-from app.services import ingrediente_service
+from app.modules.ingredientes import service as ingrediente_service
 from app.models import Usuario
 from app.unit_of_work import UnitOfWork, get_uow
 

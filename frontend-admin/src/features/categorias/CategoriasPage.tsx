@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { categoriasApi } from '../../shared/api'
+import { categoriasApi, uploadsApi } from '../../shared/api'
+import { getApiErrorMessage } from '../../shared/api/errors'
+import { cldThumb } from '../../shared/utils/cloudinary'
 import type { Categoria, CategoriaCreate, CategoriaUpdate } from '../../shared/types'
 import Modal from '../../shared/components/Modal'
 
@@ -76,6 +78,25 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
   const [nombre, setNombre] = useState(initial?.nombre ?? '')
   const [descripcion, setDescripcion] = useState(initial?.descripcion ?? '')
   const [parentId, setParentId] = useState<number | null>(initial?.parent_id ?? null)
+  const [imagenUrl, setImagenUrl] = useState<string | null>(initial?.imagen_url ?? null)
+  const [subiendo, setSubiendo] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setSubiendo(true)
+    try {
+      const { secure_url } = await uploadsApi.subir(file, 'categorias')
+      setImagenUrl(secure_url)
+    } catch (err) {
+      setUploadError(getApiErrorMessage(err, 'Error al subir la imagen'))
+    } finally {
+      setSubiendo(false)
+      e.target.value = ''
+    }
+  }
 
   // Aplanar árbol para el selector
   const aplanar = (cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] =>
@@ -89,6 +110,7 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
       parent_id: parentId,
+      imagen_url: imagenUrl,
     })
   }
 
@@ -115,6 +137,29 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
           ))}
         </select>
       </div>
+      {/* Imagen (Cloudinary) */}
+      <div>
+        <label className="block text-xs font-medium text-slate-400 mb-2">Imagen (Cloudinary)</label>
+        {imagenUrl && (
+          <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-border mb-2">
+            <img src={cldThumb(imagenUrl, 'f_auto,q_auto,c_fill,w_200,h_200')} alt="" className="w-full h-full object-cover" />
+            <button type="button" onClick={() => setImagenUrl(null)}
+              className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-5 h-5 text-xs leading-none flex items-center justify-center">
+              ×
+            </button>
+          </div>
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFile}
+          disabled={subiendo}
+          className="text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-600 file:text-white file:cursor-pointer hover:file:bg-brand-500"
+        />
+        {subiendo && <p className="text-slate-400 text-xs mt-1">Subiendo a Cloudinary…</p>}
+        {uploadError && <p className="text-red-400 text-xs mt-1">{uploadError}</p>}
+      </div>
+
       {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
       <div className="flex justify-end gap-3 pt-2">
         <button type="submit" className="btn-primary" disabled={isLoading}>

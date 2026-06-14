@@ -37,7 +37,9 @@ Estado real de cada ítem del checklist oficial de entrega.
 ## 📌 Pendientes
 
 1. **CE-15 / CE-01 / CE-16:** grabar el video mostrando WS + Cloudinary en vivo y publicar/verificar el repo público.
-2. *(Opcional)* `test_categorias` para más cobertura.
+2. **Cargar productos** (con imágenes) desde el panel admin para el demo — el seed no incluye productos.
+
+> **Detalles finales (último bloque):** **Alembic** configurado (`alembic upgrade head`, migración inicial autogenerada y verificada); **imagen de categoría** subible desde el admin (Cloudinary); **borrado de imágenes del CDN** al eliminar un producto (best-effort); WS cierra con **close code 4001** si el token expiró y los hooks **refrescan + reconectan** (spec 9.6). **37 tests** verdes.
 
 > **Hecho recientemente:** `test_websocket.py` + `test_productos.py` (30 tests, cob. 77%); transformaciones Cloudinary on-the-fly y borrado desde la UI; `strict: true` y limpieza de `any`; búsqueda con **debounce**, **paginación** y skeletons; **página de seguimiento** (`/pedidos/:id`) con **timeline en tiempo real**, stepper, badge de conexión y **resync al reconectar** (spec 9.6).
 >
@@ -47,4 +49,6 @@ Estado real de cada ítem del checklist oficial de entrega.
 >
 > **Paginación + errores:** `GET /productos` y `GET /pedidos` ahora devuelven el **envelope** `{items,total,page,size,pages}` (params `page`/`size`); el catálogo de la tienda pagina de verdad (total/páginas). Errores en formato **RFC 7807 simplificado** `{detail, code}`. 32 tests, cob. 78%.
 >
-> **Feature-Sliced Design en ambos fronts:** la tienda se reorganizó a `features/` (auth · catalogo · carrito · checkout · pedidos) + `shared/` (api · components · hooks · types · utils) + `store/`, igual que el admin. `tsc` y build verdes.
+> **Feature-Sliced Design en ambos fronts:** la tienda se reorganizó a `features/` (auth · catalogo · carrito · checkout · pedidos) + `shared/` + `store/`, igual que el admin.
+>
+> **Backend Feature-First:** reorganizado a `app/modules/<feature>/` (router + service + repository por dominio: auth, categorias, ingredientes, productos, pedidos, pagos, uploads, estadisticas, direcciones, unidades, admin, ws). `core/`, `models/`, `schemas/` y `BaseRepository` quedan compartidos. **32 tests verdes** tras la migración.

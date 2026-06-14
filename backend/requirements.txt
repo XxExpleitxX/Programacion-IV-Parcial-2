@@ -13,6 +13,7 @@ python-multipart==0.0.9
 email-validator
 cloudinary==1.41.0
 mercadopago==2.3.0
+alembic==1.18.4
 # Testing
 pytest==9.0.3
 pytest-cov==7.1.0

@@ -11,15 +11,18 @@ _ERROR_CODES = {
     429: "TOO_MANY_REQUESTS",
 }
 
-from app.routers import categorias, ingredientes, productos, auth
-from app.routers.pedidos_router import router as pedidos_router
-from app.routers.direcciones_router import router as direcciones_router
-from app.routers.admin_router import router as admin_router
-from app.routers.Umedida_router import router as umedida_router
-from app.routers.uploads_router import router as uploads_router
-from app.routers import pago_router
-from app.routers.estadisticas_router import router as estadisticas_router
-from app.routers.ws_router import router as ws_router
+from app.modules.auth.router import router as auth_router
+from app.modules.categorias.router import router as categorias_router
+from app.modules.ingredientes.router import router as ingredientes_router
+from app.modules.productos.router import router as productos_router
+from app.modules.pedidos.router import router as pedidos_router
+from app.modules.direcciones.router import router as direcciones_router
+from app.modules.admin.router import router as admin_router
+from app.modules.unidades.router import router as umedida_router
+from app.modules.uploads.router import router as uploads_router
+from app.modules.pagos.router import router as pago_router
+from app.modules.estadisticas.router import router as estadisticas_router
+from app.modules.ws.router import router as ws_router
 from app.core.database import create_db_and_tables
 
 
@@ -58,16 +61,16 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 # ─── Todas las rutas cuelgan de /api/v1 ──────────────────
 api = APIRouter(prefix="/api/v1")
-api.include_router(auth.router)
-api.include_router(categorias.router)
-api.include_router(ingredientes.router)
-api.include_router(productos.router)
+api.include_router(auth_router)
+api.include_router(categorias_router)
+api.include_router(ingredientes_router)
+api.include_router(productos_router)
 api.include_router(pedidos_router)
 api.include_router(direcciones_router)
 api.include_router(admin_router)
 api.include_router(umedida_router)
 api.include_router(uploads_router)
-api.include_router(pago_router.router)  # Rutas de pago (MercadoPago)
+api.include_router(pago_router)          # Rutas de pago (MercadoPago)
 api.include_router(estadisticas_router)  # Dashboard de estadísticas (ADMIN)
 api.include_router(ws_router)            # WebSocket: /ws/pedidos/{id} y /ws/admin/pedidos
 

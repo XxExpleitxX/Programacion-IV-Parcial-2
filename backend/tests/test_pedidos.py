@@ -46,6 +46,35 @@ def test_cancelar_requiere_motivo(client, pedidos_headers, client_headers, db_se
     assert r.status_code == 422
 
 
+def test_cliente_cancela_confirmado(client, client_headers, db_session, pedido_factory):
+    # El cliente SÍ puede cancelar su pedido mientras está CONFIRMADO (aún no en cocina)
+    cliente_id = _user_id(db_session, "cliente_test")
+    pedido = pedido_factory(usuario_id=cliente_id, estado="CONFIRMADO")
+    r = client.post(f"/api/v1/pedidos/{pedido.id}/estado", headers=client_headers,
+                    json={"estado_hacia": "CANCELADO", "motivo": "Cambié de idea"})
+    assert r.status_code == 200
+    assert r.json()["estado_codigo"] == "CANCELADO"
+
+
+def test_cliente_no_cancela_en_prep(client, client_headers, db_session, pedido_factory):
+    # En EN_PREP el cliente NO puede cancelar → 403 (solo ADMIN/PEDIDOS)
+    cliente_id = _user_id(db_session, "cliente_test")
+    pedido = pedido_factory(usuario_id=cliente_id, estado="EN_PREP")
+    r = client.post(f"/api/v1/pedidos/{pedido.id}/estado", headers=client_headers,
+                    json={"estado_hacia": "CANCELADO", "motivo": "Tarde"})
+    assert r.status_code == 403
+
+
+def test_pedidos_cancela_en_prep(client, pedidos_headers, client_headers, db_session, pedido_factory):
+    # PEDIDOS sí puede cancelar desde EN_PREP
+    cliente_id = _user_id(db_session, "cliente_test")
+    pedido = pedido_factory(usuario_id=cliente_id, estado="EN_PREP")
+    r = client.post(f"/api/v1/pedidos/{pedido.id}/estado", headers=pedidos_headers,
+                    json={"estado_hacia": "CANCELADO", "motivo": "Sin stock"})
+    assert r.status_code == 200
+    assert r.json()["estado_codigo"] == "CANCELADO"
+
+
 def test_listar_pedidos_envelope(client, client_headers, producto_factory):
     # El listado devuelve el envelope de paginación {items, total, page, size, pages}
     prod = producto_factory()

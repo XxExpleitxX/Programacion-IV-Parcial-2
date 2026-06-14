@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Request, status
 from app.core.deps import get_current_active_user
 from app.models.usuarios.usuario import Usuario
 from app.schemas.pago_schema import CrearPagoRequest, PagoResponse
-from app.services.pago_service import crear_pago, procesar_webhook, get_pago_por_pedido
+from app.modules.pagos.service import crear_pago, procesar_webhook, get_pago_por_pedido
 from app.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/pagos", tags=["Pagos"])

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from app.core.deps import require_role
 from app.models.usuarios.usuario import Usuario
 from app.schemas.uploads_schema import CloudinaryResponse
-from app.services.uploads_service import subir_imagen, eliminar_imagen
+from app.modules.uploads.service import subir_imagen, eliminar_imagen
 
 router = APIRouter(prefix="/uploads", tags=["Uploads"])
 

@@ -14,7 +14,9 @@ import { useWS } from '../../store/wsStore'
 import { useUI } from '../../store/uiStore'
 
 const WS_ROOT = 'ws://localhost:8000/api/v1/ws'
+const API_BASE = 'http://localhost:8000/api/v1'
 const MAX_INTENTOS = 10
+const WS_TOKEN_EXPIRADO = 4001   // close code que envía el backend si el JWT expiró
 
 interface Options {
   pedidoId?: number
@@ -24,6 +26,23 @@ interface Options {
 
 function getToken(): string | null {
   return useAuth.getState().user?.token ?? null
+}
+
+/** Renueva el access token con el refresh token guardado (spec 9.6). Best-effort. */
+async function refrescarToken(): Promise<void> {
+  const { user, setUser } = useAuth.getState()
+  if (!user?.refresh_token) return
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ refresh_token: user.refresh_token }),
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    setUser({ ...user, token: data.access_token, refresh_token: data.refresh_token ?? user.refresh_token })
+  } catch { /* si falla, el backoff reintenta igual */ }
 }
 
 export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options = {}) {
@@ -45,7 +64,8 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
     let cerrado = false
 
     const buildUrl = () => {
-      const q = new URLSearchParams({ token })
+      // Lee el token fresco en cada (re)conexión, así toma el renovado tras un 4001.
+      const q = new URLSearchParams({ token: getToken() ?? '' })
       // Ruta nombrada: canal del pedido o feed admin.
       const path = pedidoId != null ? `/pedidos/${pedidoId}` : '/admin/pedidos'
       return `${WS_ROOT}${path}?${q.toString()}`
@@ -66,12 +86,20 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
         } catch { /* ignore */ }
       }
 
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         setConnected(false)
         if (cerrado || intentos >= MAX_INTENTOS) return
-        const delay = Math.min(1000 * 2 ** intentos, 30000) // backoff exponencial
-        intentos++
-        timer = setTimeout(conectar, delay)
+        const reconectar = () => {
+          const delay = Math.min(1000 * 2 ** intentos, 30000) // backoff exponencial
+          intentos++
+          timer = setTimeout(conectar, delay)
+        }
+        // Token expirado → refrescar primero y luego reconectar (spec 9.6).
+        if (ev.code === WS_TOKEN_EXPIRADO) {
+          refrescarToken().finally(reconectar)
+        } else {
+          reconectar()
+        }
       }
 
       ws.onerror = () => ws?.close()

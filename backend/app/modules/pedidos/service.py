@@ -44,24 +44,42 @@ ROLES_ADMIN_PEDIDOS = {"ADMIN", "PEDIDOS"}
 
 
 def _validar_transicion(estado_actual: str, estado_hacia: str, roles: list[str]) -> None:
+    # 1. La transición debe existir en la máquina de estados.
     permitidos = FSM.get(estado_actual, [])
     if estado_hacia not in permitidos:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Transición inválida: {estado_actual} → {estado_hacia}. Permitidas: {permitidos}",
         )
-    if estado_actual == "EN_PREP" and estado_hacia == "CANCELADO":
-        if not any(r in ROLES_ADMIN_PEDIDOS for r in roles):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo ADMIN o PEDIDOS pueden cancelar desde EN_PREP.",
-            )
-    if "CLIENT" in roles and not any(r in ROLES_ADMIN_PEDIDOS for r in roles):
-        if estado_hacia not in ("CANCELADO",):
+
+    es_admin_o_pedidos = any(r in ROLES_ADMIN_PEDIDOS for r in roles)
+    es_cliente_puro = "CLIENT" in roles and not es_admin_o_pedidos
+
+    # 2. El CLIENT solo puede CANCELAR, y únicamente mientras el pedido NO entró
+    #    a cocina: estado en {PENDIENTE, CONFIRMADO}. Una vez EN_PREP, la
+    #    cancelación la realiza ADMIN/PEDIDOS.
+    if es_cliente_puro:
+        if estado_hacia != "CANCELADO":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Los clientes solo pueden cancelar pedidos.",
             )
+        if estado_actual not in ESTADOS_CANCELABLE_POR_CLIENT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"El cliente solo puede cancelar pedidos en {sorted(ESTADOS_CANCELABLE_POR_CLIENT)}; "
+                    f"desde {estado_actual} la cancelación la realiza ADMIN/PEDIDOS."
+                ),
+            )
+
+    # 3. Cancelar un pedido ya EN_PREP queda reservado a ADMIN/PEDIDOS
+    #    (cubre cualquier rol que no sea ADMIN/PEDIDOS).
+    if estado_actual == "EN_PREP" and estado_hacia == "CANCELADO" and not es_admin_o_pedidos:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo ADMIN o PEDIDOS pueden cancelar desde EN_PREP.",
+        )
 
 
 class PedidoService:

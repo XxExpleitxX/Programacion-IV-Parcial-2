@@ -14,17 +14,15 @@ CAMBIO IMPORTANTE (devolución del profe — "no commits manuales"):
 
 from sqlmodel import Session
 from app.core.database import engine
-from app.repositories import (
-    CategoriaRepository,
-    IngredienteRepository,
-    ProductoRepository,
-)
-from app.repositories.pedido_repository import PedidoRepository, DetallePedidoRepository
-from app.repositories.historial_estado_pedido_repository import HistorialEstadoPedidoRepository
+from app.modules.categorias.repository import CategoriaRepository
+from app.modules.ingredientes.repository import IngredienteRepository
+from app.modules.productos.repository import ProductoRepository
+from app.modules.pedidos.repository import PedidoRepository, DetallePedidoRepository
+from app.modules.pedidos.historial_repository import HistorialEstadoPedidoRepository
 from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedidoRepository, UnidadMedidaRepository
-from app.repositories.pagos_repository import PagoRepository
-from app.repositories.estadisticas_repository import EstadisticasRepository
-from app.repositories.direccion_repository import DireccionRepository
+from app.modules.pagos.repository import PagoRepository
+from app.modules.estadisticas.repository import EstadisticasRepository
+from app.modules.direcciones.repository import DireccionRepository
 from app.models.usuarios.usuario_repository import UsuarioRepository, RolRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.core.websocket import manager

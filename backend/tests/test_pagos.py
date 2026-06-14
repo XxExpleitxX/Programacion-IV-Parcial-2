@@ -51,7 +51,7 @@ def test_crear_pago_aprobado_confirma_pedido(
     client, client_headers, producto_factory, monkeypatch
 ):
     store = {}
-    monkeypatch.setattr("app.services.pago_service.get_sdk", lambda: _FakeSDK(store))
+    monkeypatch.setattr("app.modules.pagos.service.get_sdk", lambda: _FakeSDK(store))
 
     prod = producto_factory()
     pedido_id = _crear_pedido_api(client, client_headers, prod.id)
@@ -72,7 +72,7 @@ def test_webhook_actualiza_pago(
     client, client_headers, producto_factory, monkeypatch
 ):
     store = {}
-    monkeypatch.setattr("app.services.pago_service.get_sdk", lambda: _FakeSDK(store))
+    monkeypatch.setattr("app.modules.pagos.service.get_sdk", lambda: _FakeSDK(store))
 
     prod = producto_factory()
     pedido_id = _crear_pedido_api(client, client_headers, prod.id)

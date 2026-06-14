@@ -10,6 +10,7 @@ class CategoriaCreate(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
+    imagen_url: Optional[str] = None       # URL de Cloudinary
 
     @field_validator("nombre")
     @classmethod
@@ -23,6 +24,7 @@ class CategoriaUpdate(BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
+    imagen_url: Optional[str] = None       # URL de Cloudinary
 
 
 class CategoriaRead(BaseModel):

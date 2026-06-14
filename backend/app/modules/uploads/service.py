@@ -3,6 +3,8 @@ Servicio de uploads — Cloudinary.
 Valida MIME y tamaño, sube y elimina imágenes. No conoce HTTP más allá de las
 excepciones de FastAPI que levanta ante input inválido.
 """
+import re
+
 import cloudinary
 import cloudinary.uploader
 from fastapi import HTTPException, status, UploadFile
@@ -65,3 +67,31 @@ def eliminar_imagen(public_id: str) -> None:
     # 'ok' = borrada, 'not found' = ya no estaba (idempotente, no es error)
     if res.get("result") not in ("ok", "not found"):
         raise HTTPException(status_code=400, detail=f"No se pudo eliminar: {res.get('result')}")
+
+
+def public_id_de_url(url: str) -> str | None:
+    """
+    Deriva el public_id de una secure_url de Cloudinary.
+    Ej: https://res.cloudinary.com/demo/image/upload/v1/foodstore/productos/abc.jpg
+     →  foodstore/productos/abc
+    """
+    partes = url.split("/upload/", 1)
+    if len(partes) < 2:
+        return None
+    path = partes[1].split("?")[0].split("#")[0]
+    m = re.search(r"v\d+/", path)          # quita el segmento de versión vNNN/
+    if m:
+        path = path[m.end():]
+    path = re.sub(r"\.[^/.]+$", "", path)  # quita la extensión
+    return path or None
+
+
+def borrar_por_url(url: str) -> None:
+    """Best-effort: borra de Cloudinary la imagen de una secure_url. NUNCA lanza."""
+    public_id = public_id_de_url(url)
+    if not public_id:
+        return
+    try:
+        cloudinary.uploader.destroy(public_id, resource_type="image")
+    except Exception:
+        pass   # el borrado del CDN no debe bloquear la baja del producto

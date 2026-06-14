@@ -46,16 +46,16 @@ proyecto_parcial/
 │   ├── .env.example             # plantilla de variables de entorno (CE-03)
 │   ├── requirements.txt
 │   ├── tests/                   # pytest (conftest + test_auth/pedidos/pagos/uploads/estadisticas)
-│   └── app/
-│       ├── main.py              # app + CORS + montaje de routers bajo /api/v1
+│   └── app/  (Feature-First — módulos por dominio)
+│       ├── main.py              # app + CORS + handler RFC 7807 + montaje bajo /api/v1
 │       ├── unit_of_work.py      # UoW: commit/rollback automático + eventos WS post-commit
+│       ├── modules/             # un paquete por feature, cada uno con router/service/repository:
+│       │                        #   auth · categorias · ingredientes · productos · pedidos ·
+│       │                        #   pagos · uploads · estadisticas · direcciones · unidades · admin · ws
 │       ├── core/                # config, database, deps, websocket, mercado_pago_cliente, rate_limit, security/
-│       ├── models/              # SQLModel (usuarios/, producto, pedido, pago, ...)
-│       ├── repositories/        # ÚNICA capa que toca la BD (BaseRepository[T] genérico)
-│       ├── services/            # lógica de negocio (stateless, sin commits)
-│       ├── schemas/             # Pydantic v2 (Create / Update / Read separados)
-│       ├── routers/             # auth, productos, categorias, ingredientes, unidades,
-│       │                        # pedidos, direcciones, admin, pagos, uploads, estadisticas
+│       ├── models/              # SQLModel compartidos (usuarios/, producto, pedido, pago, ...)
+│       ├── repositories/        # BaseRepository[T] genérico + repos de infra (usuario, catálogo, refresh)
+│       ├── schemas/             # Pydantic v2 (Create / Update / Read + pagination)
 │       └── db/seed.py           # seed obligatorio (roles, estados, formas de pago, unidades, admin)
 │
 ├── frontend-store/              # Tienda (cliente) — React + Vite — http://localhost:5173
@@ -126,6 +126,9 @@ copy .env.example .env
 cp .env.example .env
 #   → editar .env: DB_PASSWORD si tu MySQL tiene clave, y las credenciales
 #     de MercadoPago y Cloudinary si vas a probar pagos / subida de imágenes.
+
+# (Opcional) Migraciones con Alembic — el esquema también se crea solo al iniciar la app
+alembic upgrade head
 
 # Seed obligatorio (roles, estados, formas de pago, unidades de medida y admin)
 python -m app.db.seed

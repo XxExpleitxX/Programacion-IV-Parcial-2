@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from dotenv import load_dotenv
 from jose import jwt, JWTError
+from jose.exceptions import ExpiredSignatureError
 
 load_dotenv()
 
@@ -51,6 +52,20 @@ def decode_token(token: str) -> Optional[dict]:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         return None
+
+
+def decode_token_estado(token: str) -> tuple[Optional[dict], Optional[str]]:
+    """
+    Como decode_token pero distingue el motivo de fallo.
+    Devuelve (payload, motivo) con motivo ∈ {None, 'expirado', 'invalido'}.
+    Útil para el WebSocket: token expirado → close 4001 (refrescar y reconectar).
+    """
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]), None
+    except ExpiredSignatureError:
+        return None, "expirado"
+    except JWTError:
+        return None, "invalido"
 
 
 decode_access_token = decode_token  # Alias para mantener consistencia de nombres

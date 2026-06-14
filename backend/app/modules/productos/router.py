@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from app.core.security import require_admin, require_admin_or_editor, require_authenticated
 from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead
 from app.schemas.pagination import Paginated
-from app.services import producto_service
+from app.modules.productos import service as producto_service
 from app.models import Usuario
 from app.unit_of_work import UnitOfWork, get_uow
 

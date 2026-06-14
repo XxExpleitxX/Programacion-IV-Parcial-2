@@ -65,6 +65,7 @@ def create(uow: UnitOfWork, data: CategoriaCreate) -> Categoria:
         nombre=data.nombre,
         descripcion=data.descripcion,
         parent_id=data.parent_id,
+        imagen_url=data.imagen_url,
     )
     uow.categorias.add(categoria)
     uow.flush()

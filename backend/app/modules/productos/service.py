@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from app.models import Producto, ProductoCategoria
 from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead, CategoriaRead
 from app.schemas.pagination import paginate
+from app.modules.uploads.service import borrar_por_url
 from app.unit_of_work import UnitOfWork
 
 
@@ -202,5 +203,8 @@ def delete(uow: UnitOfWork, producto_id: int) -> None:
     producto = uow.productos.get_by_id(producto_id)
     if not producto or producto.deleted_at is not None:
         raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")
+    # Limpia las imágenes del CDN (best-effort) antes del soft-delete.
+    for url in (producto.imagenes_url or []):
+        borrar_por_url(url)
     producto.deleted_at = datetime.utcnow()
     uow.productos.add(producto)

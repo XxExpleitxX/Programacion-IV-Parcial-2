@@ -29,12 +29,14 @@ export interface CategoriaCreate {
   nombre: string;
   descripcion?: string;
   parent_id?: number | null;
+  imagen_url?: string | null;
 }
 
 export interface CategoriaUpdate {
   nombre?: string;
   descripcion?: string;
   parent_id?: number | null;
+  imagen_url?: string | null;
 }
 
 // ─── Ingrediente ─────────────────────────────────────────

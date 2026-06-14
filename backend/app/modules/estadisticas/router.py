@@ -19,7 +19,7 @@ from app.schemas.estadisticas_schema import (
     ResumenResponse, VentasPeriodoItem, ProductoTopItem,
     PedidosEstadoItem, IngresosResponse,
 )
-from app.services.estadisticas_service import EstadisticasService
+from app.modules.estadisticas.service import EstadisticasService
 from app.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/estadisticas", tags=["Estadísticas"])

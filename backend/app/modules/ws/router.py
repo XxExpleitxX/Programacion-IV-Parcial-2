@@ -10,7 +10,7 @@ Auth por query param ?token=<jwt>. El broadcast lo dispara el UoW POST-commit.
 from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
-from app.core.security import decode_token
+from app.core.security.jwt_handler import decode_token_estado
 from app.core.websocket import manager
 from app.unit_of_work import UnitOfWork
 
@@ -18,11 +18,18 @@ router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
 
 async def _autenticar(websocket: WebSocket, token: str) -> Optional[list[str]]:
-    """Valida el JWT y el usuario. Devuelve los roles, o cierra la conexión y None."""
-    payload = decode_token(token)
+    """Valida el JWT y el usuario. Devuelve los roles, o cierra la conexión y None.
+
+    Cierra con close code 4001 si el token EXPIRÓ (el cliente debe refrescar y
+    reconectar, spec 9.6) y con 1008 si es inválido por cualquier otro motivo.
+    """
+    payload, motivo = decode_token_estado(token)
     if not payload or not payload.get("sub"):
         await websocket.accept()
-        await websocket.close(code=1008, reason="Token invalido")
+        if motivo == "expirado":
+            await websocket.close(code=4001, reason="Token expirado")
+        else:
+            await websocket.close(code=1008, reason="Token invalido")
         return None
     with UnitOfWork() as uow:
         user = uow.usuarios.get_by_username(payload["sub"])
