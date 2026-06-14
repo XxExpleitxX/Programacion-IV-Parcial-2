@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { productosApi } from '../api/index'
-import { useCarrito } from '../store/carritoStore'
+import { productosApi } from '../../shared/api/index'
+import { useCarrito } from '../../store/carritoStore'
+import { cldThumb } from '../../shared/utils/cloudinary'
 
 export default function ProductoDetallePage() {
   const { id } = useParams<{ id: string }>()
@@ -34,7 +35,7 @@ export default function ProductoDetallePage() {
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
         <div className="h-48 bg-gradient-to-br from-orange-900/30 to-gray-800 flex items-center justify-center overflow-hidden">
           {producto.imagenes_url && producto.imagenes_url.length > 0 ? (
-            <img src={producto.imagenes_url[0]} alt={producto.nombre} className="w-full h-full object-cover" />
+            <img src={cldThumb(producto.imagenes_url[0], 'f_auto,q_auto,c_fill,w_800,h_384')} alt={producto.nombre} className="w-full h-full object-cover" />
           ) : (
             <span className="text-8xl">🍽️</span>
           )}

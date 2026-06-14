@@ -1,6 +1,7 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Relationship, Column
+from sqlmodel import Numeric, SQLModel, Field, Relationship, Column
 from sqlalchemy import JSON
 
 if TYPE_CHECKING:
@@ -20,7 +21,7 @@ class Producto(SQLModel, table=True):
 
     nombre:          str                 = Field(max_length=150)
     descripcion:     Optional[str]       = Field(default=None)
-    precio_base:     float               = Field(ge=0)
+    precio_base:     Decimal             = Field(default=Decimal("0.00"), ge=0, sa_column=Column(Numeric(10, 2), nullable=False))
     imagenes_url:    Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
     stock_cantidad:  int                 = Field(default=0, ge=0)
     disponible:      bool                = Field(default=True)

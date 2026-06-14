@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance'
-import type { Producto, Categoria, Pedido } from '../types'
+import type { Producto, Categoria, Pedido, HistorialEstado, Paginated } from '../types'
 
 // ─── Productos ────────────────────────────────────────────
 export const productosApi = {
@@ -9,9 +9,9 @@ export const productosApi = {
     precio_min?: number
     precio_max?: number
     disponible?: boolean
-    offset?: number
-    limit?: number
-  }) => axiosInstance.get<Producto[]>('/productos/', { params }).then(r => r.data),
+    page?: number
+    size?: number
+  }) => axiosInstance.get<Paginated<Producto>>('/productos/', { params }).then(r => r.data),
 
   getById: (id: number) =>
     axiosInstance.get<Producto>(`/productos/${id}`).then(r => r.data),
@@ -28,12 +28,14 @@ export const authApi = {
   login: async (username: string, password: string) => {
     const res = await axiosInstance.post('/auth/login', { username, password })
     const token = res.data.access_token
+    const refresh_token = res.data.refresh_token
     const me = await axiosInstance.get('/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
-    return { token, user: me.data }
+    return { token, refresh_token, user: me.data }
   },
-  logout: () => axiosInstance.post('/auth/logout').catch(() => {}),
+  logout: (refreshToken?: string) =>
+    axiosInstance.post('/auth/logout', { refresh_token: refreshToken ?? '' }).catch(() => {}),
   register: (data: {
     username: string
     nombre: string
@@ -53,10 +55,13 @@ export const pedidosApi = {
   }) => axiosInstance.post<Pedido>('/pedidos/', data).then(r => r.data),
 
   getMisPedidos: () =>
-    axiosInstance.get<Pedido[]>('/pedidos/').then(r => r.data),
+    axiosInstance.get<Paginated<Pedido>>('/pedidos/', { params: { size: 100 } }).then(r => r.data.items),
 
   getById: (id: number) =>
     axiosInstance.get<Pedido>(`/pedidos/${id}`).then(r => r.data),
+
+  getHistorial: (id: number) =>
+    axiosInstance.get<HistorialEstado[]>(`/pedidos/${id}/historial`).then(r => r.data),
 
   cancelar: (id: number, motivo: string) =>
     axiosInstance.post<Pedido>(`/pedidos/${id}/estado`, {

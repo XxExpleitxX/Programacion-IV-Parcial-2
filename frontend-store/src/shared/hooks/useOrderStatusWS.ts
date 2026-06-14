@@ -9,11 +9,11 @@
  * - Cada evento dispara un toast (uiStore).
  */
 import { useEffect, useRef } from 'react'
-import { useAuth } from '../store/authStore'
-import { useWS } from '../store/wsStore'
-import { useUI } from '../store/uiStore'
+import { useAuth } from '../../store/authStore'
+import { useWS } from '../../store/wsStore'
+import { useUI } from '../../store/uiStore'
 
-const WS_BASE = 'ws://localhost:8000/api/v1/pedidos/ws'
+const WS_ROOT = 'ws://localhost:8000/api/v1/ws'
 const MAX_INTENTOS = 10
 
 interface Options {
@@ -46,8 +46,9 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
 
     const buildUrl = () => {
       const q = new URLSearchParams({ token })
-      if (pedidoId != null) q.set('pedido_id', String(pedidoId))
-      return `${WS_BASE}?${q.toString()}`
+      // Ruta nombrada: canal del pedido o feed admin.
+      const path = pedidoId != null ? `/pedidos/${pedidoId}` : '/admin/pedidos'
+      return `${WS_ROOT}${path}?${q.toString()}`
     }
 
     const conectar = () => {

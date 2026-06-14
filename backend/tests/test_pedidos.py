@@ -46,6 +46,22 @@ def test_cancelar_requiere_motivo(client, pedidos_headers, client_headers, db_se
     assert r.status_code == 422
 
 
+def test_listar_pedidos_envelope(client, client_headers, producto_factory):
+    # El listado devuelve el envelope de paginación {items, total, page, size, pages}
+    prod = producto_factory()
+    client.post("/api/v1/pedidos/", headers=client_headers, json={
+        "forma_pago_codigo": "EFECTIVO",
+        "items": [{"producto_id": prod.id, "cantidad": 1}],
+    })
+    r = client.get("/api/v1/pedidos/", headers=client_headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert set(body.keys()) >= {"items", "total", "page", "size", "pages"}
+    assert body["total"] >= 1
+    assert body["page"] == 1
+    assert len(body["items"]) == body["total"]
+
+
 def test_historial_primer_registro_estado_desde_null(client, client_headers, producto_factory):
     # RN-02: el primer registro de historial tiene estado_desde = None
     prod = producto_factory()

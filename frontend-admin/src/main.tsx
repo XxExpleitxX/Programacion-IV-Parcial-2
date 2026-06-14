@@ -5,7 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
-import { AuthProvider } from './context/AuthContext'
+// AuthProvider eliminado — el estado de auth vive en authStore (Zustand + persist)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,9 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <App />
       </BrowserRouter>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { productosApi, categoriasApi, unidadesApi, ingredientesApi, uploadsApi } from '../../shared/api'
+import { getApiErrorMessage } from '../../shared/api/errors'
+import { cldThumb, publicIdFromUrl } from '../../shared/utils/cloudinary'
 import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida, Ingrediente } from '../../shared/types'
 import Modal from '../../shared/components/Modal'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../store/authStore'
 import { toggleCategoriaConCascada } from '../../shared/utils/categorias'
 
 // ── Tipos internos ────────────────────────────────────────────────────────
@@ -47,15 +49,26 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
     try {
       const { secure_url } = await uploadsApi.subir(file, 'productos')
       setImagenesUrl(prev => [...prev, secure_url])
-    } catch (err: any) {
-      setUploadError(err.response?.data?.detail ?? 'Error al subir la imagen')
+    } catch (err) {
+      setUploadError(getApiErrorMessage(err, 'Error al subir la imagen'))
     } finally {
       setSubiendo(false)
       e.target.value = ''   // permite volver a subir el mismo archivo
     }
   }
 
-  const quitarImagen = (url: string) => setImagenesUrl(prev => prev.filter(u => u !== url))
+  // Borra la imagen del CDN (DELETE /uploads/imagen/{public_id}) y la saca del form.
+  // Best-effort: si Cloudinary falla, igual la quitamos localmente y avisamos.
+  const quitarImagen = async (url: string) => {
+    setImagenesUrl(prev => prev.filter(u => u !== url))
+    const publicId = publicIdFromUrl(url)
+    if (!publicId) return
+    try {
+      await uploadsApi.eliminar(publicId)
+    } catch (err) {
+      setUploadError(getApiErrorMessage(err, 'No se pudo borrar la imagen del CDN'))
+    }
+  }
  
   // Calculadora integrada
   const [costoOperativo, setCostoOperativo] = useState('0')
@@ -309,7 +322,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           <div className="flex flex-wrap gap-2 mb-2">
             {imagenesUrl.map(url => (
               <div key={url} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img src={cldThumb(url, 'f_auto,q_auto,c_fill,w_160,h_160')} alt="" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => quitarImagen(url)}
                   className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-5 h-5 text-xs leading-none flex items-center justify-center">
                   ×
@@ -359,7 +372,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
 export default function ProductosPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { role } = useAuth()
+  const role = useAuthStore((s) => s.user?.rol ?? null)
   const esAdmin = role === 'ADMIN'
 
   const [search, setSearch] = useState('')

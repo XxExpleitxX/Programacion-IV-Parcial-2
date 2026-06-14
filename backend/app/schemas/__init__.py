@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional, List
 from pydantic import BaseModel, field_validator
 
@@ -87,7 +88,7 @@ class IngredienteRead(BaseModel):
 class ProductoCreate(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
-    precio_base: float
+    precio_base: Decimal
     disponible: bool = True
     stock_cantidad: int = 0
     unidad_venta_id: Optional[int] = None
@@ -105,7 +106,7 @@ class ProductoCreate(BaseModel):
 
     @field_validator("precio_base")
     @classmethod
-    def precio_positivo(cls, v: float) -> float:
+    def precio_positivo(cls, v: Decimal) -> Decimal:
         if v < 0:
             raise ValueError("El precio no puede ser negativo")
         return v
@@ -114,7 +115,7 @@ class ProductoCreate(BaseModel):
 class ProductoUpdate(BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
-    precio_base: Optional[float] = None
+    precio_base: Optional[Decimal] = None
     disponible: Optional[bool] = None
     stock_cantidad: Optional[int] = None
     unidad_venta_id: Optional[int] = None

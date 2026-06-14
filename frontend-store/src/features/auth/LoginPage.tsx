@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authApi } from '../api/index'
-import { useAuth } from '../store/authStore'
+import { authApi } from '../../shared/api/index'
+import { getApiErrorMessage } from '../../shared/api/errors'
+import { useAuth } from '../../store/authStore'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -20,16 +21,16 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const username = usernameDeEmail(form.email)
-      const { token, user } = await authApi.login(username, form.password)
-      setUser({ username: user.username, token, roles: user.roles ?? [] })
+      const { token, refresh_token, user } = await authApi.login(username, form.password)
+      setUser({ username: user.username, token, refresh_token, roles: user.roles ?? [] })
       navigate('/')
     } catch {
       // Intentar con el email directamente como username
       try {
-        const { token, user } = await authApi.login(form.email, form.password)
-        setUser({ username: user.username, token, roles: user.roles ?? [] })
+        const { token, refresh_token, user } = await authApi.login(form.email, form.password)
+        setUser({ username: user.username, token, refresh_token, roles: user.roles ?? [] })
         navigate('/')
-      } catch (err: any) {
+      } catch {
         setError('Email o contraseña incorrectos')
       }
     } finally {
@@ -50,11 +51,11 @@ export default function LoginPage() {
         email: form.email,
         password: form.password,
       })
-      const { token, user } = await authApi.login(username, form.password)
-      setUser({ username: user.username, token, roles: user.roles ?? [] })
+      const { token, refresh_token, user } = await authApi.login(username, form.password)
+      setUser({ username: user.username, token, refresh_token, roles: user.roles ?? [] })
       navigate('/')
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? 'Error al registrarse')
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Error al registrarse'))
     } finally {
       setLoading(false)
     }

@@ -6,7 +6,7 @@ Nota: el HistorialEstadoPedidoRepository se movió a su propio archivo
 """
 
 from typing import Optional, List
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 
 from app.models.pedido import Pedido
 from app.models.detalle_pedido import DetallePedido
@@ -17,16 +17,24 @@ class PedidoRepository(BaseRepository[Pedido]):
     def __init__(self, session: Session):
         super().__init__(session, Pedido)
 
-    def get_by_usuario(self, usuario_id: int) -> List[Pedido]:
+    def get_by_usuario(self, usuario_id: int, offset: int = 0, limit: int = 20) -> List[Pedido]:
         """Pedidos de un cliente (sin los borrados), más nuevos primero."""
         return self.session.exec(
             select(Pedido)
             .where(Pedido.usuario_id == usuario_id)
             .where(Pedido.deleted_at == None)            # noqa: E711
             .order_by(Pedido.created_at.desc())
+            .offset(offset).limit(limit)
         ).all()
 
-    def get_all_active(self, estado: Optional[str] = None) -> List[Pedido]:
+    def count_by_usuario(self, usuario_id: int) -> int:
+        return self.session.exec(
+            select(func.count()).select_from(Pedido)
+            .where(Pedido.usuario_id == usuario_id)
+            .where(Pedido.deleted_at == None)            # noqa: E711
+        ).one()
+
+    def get_all_active(self, estado: Optional[str] = None, offset: int = 0, limit: int = 20) -> List[Pedido]:
         """
         Todos los pedidos activos (ADMIN/PEDIDOS), con filtro opcional por estado.
         ANTES esta query estaba en el service -> ahora vive donde corresponde: el repo.
@@ -34,7 +42,15 @@ class PedidoRepository(BaseRepository[Pedido]):
         query = select(Pedido).where(Pedido.deleted_at == None)   # noqa: E711
         if estado:
             query = query.where(Pedido.estado_codigo == estado.upper())
-        return self.session.exec(query.order_by(Pedido.created_at.desc())).all()
+        return self.session.exec(
+            query.order_by(Pedido.created_at.desc()).offset(offset).limit(limit)
+        ).all()
+
+    def count_all_active(self, estado: Optional[str] = None) -> int:
+        query = select(func.count()).select_from(Pedido).where(Pedido.deleted_at == None)  # noqa: E711
+        if estado:
+            query = query.where(Pedido.estado_codigo == estado.upper())
+        return self.session.exec(query).one()
 
     def get_with_detalles(self, pedido_id: int) -> Optional[Pedido]:
         pedido = self.session.get(Pedido, pedido_id)

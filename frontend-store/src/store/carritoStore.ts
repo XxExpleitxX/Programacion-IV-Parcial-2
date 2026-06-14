@@ -5,7 +5,7 @@
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Producto, ItemCarrito } from '../types/index'
+import type { Producto, ItemCarrito } from '../shared/types/index'
 
 interface CarritoState {
   items: ItemCarrito[]

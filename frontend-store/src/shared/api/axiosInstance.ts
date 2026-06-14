@@ -1,14 +1,14 @@
 /**
- * axiosInstance — cliente HTTP con interceptors JWT.
- *
- * Lee el token desde authStore (Zustand) usando getState(),
- * que funciona tanto dentro como fuera de componentes React.
+ * Instancia de Axios del Store.
+ * - Request: agrega el access token JWT automáticamente.
+ * - Response: ante un 401 intenta renovar el access token con el refresh token
+ *   (POST /auth/refresh) y reintenta la request original UNA vez. Si el refresh
+ *   falla, recién ahí desloguea y manda al login.
  */
-
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../store/authStore'
+import { useAuth } from '../../store/authStore'
 
-const BASE_URL = 'http://localhost:8000/api/v1'
+const BASE_URL = 'http://localhost:8000'
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -16,32 +16,34 @@ const axiosInstance = axios.create({
   withCredentials: true,
 })
 
-// ── Interceptor REQUEST: agrega el token JWT ──────────────
+// ── Request — agrega token ────────────────────────────────
 axiosInstance.interceptors.request.use(
   (config) => {
-    // getState() funciona fuera de React (sin hooks)
-    const token = useAuthStore.getState().user?.token
+    const token = useAuth.getState().user?.token
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// ── Refresh single-flight: un solo refresh aunque lleguen varios 401 ──
+// ── Refresh single-flight: si llegan varios 401 a la vez, un solo refresh ──
 let refreshPromise: Promise<string | null> | null = null
 
 async function refrescarAccessToken(): Promise<string | null> {
-  const user = useAuthStore.getState().user
+  const user = useAuth.getState().user
   if (!user?.refresh_token) return null
   try {
+    // axios "crudo" (no la instancia) para no recursar el interceptor.
     const res = await axios.post(
-      `${BASE_URL}/auth/refresh`,
+      `${BASE_URL}/api/v1/auth/refresh`,
       { refresh_token: user.refresh_token },
       { withCredentials: true },
     )
     const nuevoToken: string = res.data.access_token
-    useAuthStore.setState({
-      user: { ...user, token: nuevoToken, refresh_token: res.data.refresh_token ?? user.refresh_token },
+    useAuth.getState().setUser({
+      ...user,
+      token: nuevoToken,
+      refresh_token: res.data.refresh_token ?? user.refresh_token,
     })
     return nuevoToken
   } catch {
@@ -56,7 +58,7 @@ function refreshUnaVez(): Promise<string | null> {
   return refreshPromise
 }
 
-// ── Interceptor RESPONSE: 401 → refresh + retry, o logout ───────
+// ── Response — 401 → refresh + retry, o logout ────────────
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -68,9 +70,10 @@ axiosInstance.interceptors.response.use(
       const nuevoToken = await refreshUnaVez()
       if (nuevoToken) {
         original.headers.Authorization = `Bearer ${nuevoToken}`
-        return axiosInstance(original)
+        return axiosInstance(original)          // reintento transparente
       }
-      useAuthStore.setState({ user: null })
+      // El refresh falló → desloguear de verdad
+      useAuth.getState().logout()
       window.location.href = '/login'
     }
     return Promise.reject(error)

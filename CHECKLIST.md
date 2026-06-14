@@ -17,7 +17,7 @@ Estado real de cada ítem del checklist oficial de entrega.
 | **CE-10** | Unit of Work correcto (ningún `service.session.commit()` directo) | ✅ | Auditado y pulido: nadie comitea a mano, solo el repo toca la BD |
 | **CE-11** | 5 Zustand stores tipados con `persist` (incluye `wsStore`) | ✅ | `frontend-store`: `authStore`, `carritoStore` (con persist), `wsStore`, `uiStore`, `pagoStore` — todos usados |
 | **CE-12** | WS: cambio de estado desde el panel admin actualiza la UI del cliente sin recargar | ✅ | Broadcast post-commit + hook `useOrderStatusWS` (invalida queries + toast) |
-| **CE-13** | Cloudinary: subir imagen desde el panel admin y verla en el catálogo | ✅ | Input de archivo en el form de productos → `/uploads/imagen` → `imagenes_url` se guarda y se muestra en el catálogo |
+| **CE-13** | Cloudinary: subir imagen desde el panel admin y verla en el catálogo | ✅ | Upload desde el form → `/uploads/imagen`; **transformaciones on-the-fly** (`f_auto,q_auto,c_fill`) al mostrar en catálogo/detalle; **eliminación** desde la UI con `DELETE /uploads/imagen/{public_id}` |
 | **CE-15** | Link a video demo (10–15 min) en README (mostrar WS y Cloudinary en vivo) | 🔶 | Link presente en el README; falta grabar/verificar que la demo muestre WS + Cloudinary |
 | **CE-16** | Repositorio público verificado con sesión cerrada | ⬜ | A verificar al momento de la entrega |
 
@@ -29,7 +29,7 @@ Estado real de cada ítem del checklist oficial de entrega.
 
 | | Descripción | Estado |
 |---|-------------|:------:|
-| **Bonus +10** | Tests unitarios con pytest, cobertura > 60% (`test_pedidos`, `test_pagos`, `test_auth`) | ✅ | **Logrado** — 19 tests, cobertura ~74% (auth, pedidos, pagos, uploads, estadísticas) |
+| **Bonus +10** | Tests unitarios con pytest, cobertura > 60% (`test_pedidos`, `test_pagos`, `test_auth`) | ✅ | **Logrado** — 27 tests, cobertura **77%** (auth, pedidos, pagos, uploads, estadísticas, **websocket**, productos) |
 | **Penalización −30%** | El proyecto no corre localmente siguiendo el README | ✅ Evitada | Corre con MySQL/XAMPP (uso aprobado por la cátedra) |
 
 ---
@@ -37,6 +37,14 @@ Estado real de cada ítem del checklist oficial de entrega.
 ## 📌 Pendientes
 
 1. **CE-15 / CE-01 / CE-16:** grabar el video mostrando WS + Cloudinary en vivo y publicar/verificar el repo público.
-2. *(Opcional)* Subir cobertura de tests agregando `test_productos` y `test_categorias`.
+2. *(Opcional)* `test_categorias` para más cobertura.
 
-> **Hecho recientemente:** dashboard de estadísticas en el panel admin (KPIs + gráficos recharts consumiendo `/estadisticas/*`) y reestructuración del **frontend-admin a Feature-Sliced Design** (`features/` + `shared/`).
+> **Hecho recientemente:** `test_websocket.py` + `test_productos.py` (30 tests, cob. 77%); transformaciones Cloudinary on-the-fly y borrado desde la UI; `strict: true` y limpieza de `any`; búsqueda con **debounce**, **paginación** y skeletons; **página de seguimiento** (`/pedidos/:id`) con **timeline en tiempo real**, stepper, badge de conexión y **resync al reconectar** (spec 9.6).
+>
+> **Bloque "seguro" (rúbrica):** (1) **rutas WS nombradas** `/api/v1/ws/pedidos/{id}` y `/api/v1/ws/admin/pedidos` (router WS dedicado); (2) **interceptor 401 con refresh automático** y reintento single-flight en ambos fronts (+ logout que ahora revoca el refresh token); (3) **gestión de stock** para rol STOCK: `PATCH /productos/{id}/stock` (ADMIN/STOCK) + página `/stock` en el admin.
+>
+> **Bug corregido:** `precio_base` en `ProductoCreate` apuntaba a `unicodedata.decimal` en vez de `Decimal` (rompía `POST /productos`).
+>
+> **Paginación + errores:** `GET /productos` y `GET /pedidos` ahora devuelven el **envelope** `{items,total,page,size,pages}` (params `page`/`size`); el catálogo de la tienda pagina de verdad (total/páginas). Errores en formato **RFC 7807 simplificado** `{detail, code}`. 32 tests, cob. 78%.
+>
+> **Feature-Sliced Design en ambos fronts:** la tienda se reorganizó a `features/` (auth · catalogo · carrito · checkout · pedidos) + `shared/` (api · components · hooks · types · utils) + `store/`, igual que el admin. `tsc` y build verdes.

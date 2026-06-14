@@ -11,15 +11,15 @@ El commit es automático (lo hace el Unit of Work al terminar bien el request).
 """
 
 from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, Query, status, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, status
 
-from app.core.security import decode_token, require_authenticated
+from app.core.security import require_authenticated
 from app.core.config import settings
-from app.core.websocket import manager
 from app.models.usuarios.usuario import Usuario
 from app.schemas.pago_schema import (
     PedidoCreate, PedidoRead, AvanzarEstadoRequest, HistorialRead
 )
+from app.schemas.pagination import Paginated
 from app.services.pedido_service import PedidoService
 from app.unit_of_work import UnitOfWork, get_uow
 
@@ -56,16 +56,18 @@ def crear_pedido(
 # ── Listar pedidos ────────────────────────────────────────────────────────────
 # cliente ve solo sus pedidos, admin/pedidos ven todos
 
-@router.get("/", response_model=List[PedidoRead])
+@router.get("/", response_model=Paginated[PedidoRead])
 def listar_pedidos(
     uow: UoWDep,
     usuario: Usuario = Depends(require_authenticated),
     estado: Annotated[Optional[str], Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    size: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     roles = _roles(usuario)
     if "ADMIN" in roles or "PEDIDOS" in roles:
-        return PedidoService.get_todos_pedidos(uow, estado=estado)
-    return PedidoService.get_pedidos_usuario(uow, usuario.id)
+        return PedidoService.get_todos_pedidos(uow, estado=estado, page=page, size=size)
+    return PedidoService.get_pedidos_usuario(uow, usuario.id, page=page, size=size)
 
 
 # ── Detalle ───────────────────────────────────────────────────────────────────
@@ -110,50 +112,5 @@ def get_historial(
     return uow.historial.get_by_pedido(pedido_id)
 
 
-# ── WebSocket para seguimiento de pedido en tiempo real ────────────────────────
-
-@router.websocket("/ws")
-async def websocket_pedidos(
-    websocket: WebSocket,
-    token: str = Query(...),
-    pedido_id: Optional[int] = Query(None),
-):
-    """
-    WebSocket de seguimiento en tiempo real. Auth por query param ?token=<jwt>.
-      - Con ?pedido_id=N  → suscribe al canal de ESE pedido (cliente que lo sigue).
-      - Sin pedido_id     → feed "admin" de TODOS los pedidos (solo ADMIN/PEDIDOS).
-    Ej: ws://localhost:8000/api/v1/pedidos/ws?token=...&pedido_id=12
-    """
-    # 1. Validar el JWT que viene en el query param
-    payload = decode_token(token)
-    if not payload or not payload.get("sub"):
-        await websocket.accept()
-        await websocket.close(code=1008, reason="Token invalido")
-        return
-
-    # 2. Validar que el usuario exista y esté activo
-    with UnitOfWork() as uow:
-        user = uow.usuarios.get_by_username(payload["sub"])
-        if not user or user.disabled:
-            await websocket.accept()
-            await websocket.close(code=1008, reason="Usuario invalido o inactivo")
-            return
-        roles = user.roles
-
-    # 3. Elegir canal: un pedido puntual, o el feed admin
-    if pedido_id is not None:
-        channel = str(pedido_id)
-    else:
-        if not any(r in ("ADMIN", "PEDIDOS") for r in roles):
-            await websocket.accept()
-            await websocket.close(code=1008, reason="Requiere rol ADMIN/PEDIDOS")
-            return
-        channel = "admin"
-
-    # 4. Registrar y mantener viva la conexión en ese canal
-    await manager.connect(websocket, channel)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, channel)
+# Los endpoints WebSocket viven en app/routers/ws_router.py
+# (/api/v1/ws/pedidos/{id} y /api/v1/ws/admin/pedidos).

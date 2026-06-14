@@ -8,7 +8,7 @@ import type {
   Categoria, CategoriaCreate, CategoriaUpdate,
   Ingrediente, IngredienteCreate, IngredienteUpdate,
   Producto, ProductoCreate, ProductoUpdate,
-  UnidadMedida, Pedido, CloudinaryResponse,
+  UnidadMedida, Pedido, CloudinaryResponse, Paginated,
 } from '../types'
 
 // ─── Uploads (Cloudinary) ─────────────────────────────────
@@ -19,10 +19,17 @@ export const uploadsApi = {
     const form = new FormData()
     form.append('file', file)
     form.append('folder', folder)
+    // postForm fija Content-Type: multipart/form-data (con boundary) automáticamente,
+    // sobrescribiendo el default JSON del axiosInstance. Sin casts a `any`.
     return axiosInstance
-      .post<CloudinaryResponse>('/uploads/imagen', form, { headers: { 'Content-Type': undefined } as any })
+      .postForm<CloudinaryResponse>('/uploads/imagen', form)
       .then(r => r.data)
   },
+
+  // Elimina una imagen del CDN. El backend acepta public_id con '/' ({public_id:path}),
+  // por eso no encodeamos las barras.
+  eliminar: (publicId: string) =>
+    axiosInstance.delete(`/uploads/imagen/${publicId}`).then(r => r.data),
 }
 
 // ─── UnidadMedida ─────────────────────────────────────────
@@ -69,10 +76,14 @@ export const productosApi = {
     categoria_id?: number
     precio_min?: number
     precio_max?: number
-    offset?: number
-    limit?: number
+    page?: number
+    size?: number
   }) =>
-    axiosInstance.get<Producto[]>('/productos/', { params }).then(r => r.data),
+    // La API devuelve el envelope paginado; el admin consume todos los items
+    // (sin UI de paginación) pidiendo el tope de tamaño de página.
+    axiosInstance
+      .get<Paginated<Producto>>('/productos/', { params: { size: 100, ...params } })
+      .then(r => r.data.items),
   getById: (id: number) =>
     axiosInstance.get<Producto>(`/productos/${id}`).then(r => r.data),
   create: (data: ProductoCreate) =>
@@ -83,6 +94,8 @@ export const productosApi = {
     axiosInstance.delete(`/productos/${id}`).then(r => r.data),
   patchDisponibilidad: (id: number, disponible: boolean) =>
     axiosInstance.patch<Producto>(`/productos/${id}/disponibilidad`, { disponible }).then(r => r.data),
+  patchStock: (id: number, stock_cantidad: number) =>
+    axiosInstance.patch<Producto>(`/productos/${id}/stock`, { stock_cantidad }).then(r => r.data),
   calcularPrecio: (id: number, margen: number) =>
   axiosInstance.get(`/productos/${id}/precio-sugerido`, { params: { margen } }).then(r => r.data),
 }
@@ -90,7 +103,9 @@ export const productosApi = {
 // ─── Pedidos ──────────────────────────────────────────────
 export const pedidosApi = {
   getAll: (params?: { estado?: string }) =>
-    axiosInstance.get<Pedido[]>('/pedidos/', { params }).then(r => r.data),
+    axiosInstance
+      .get<Paginated<Pedido>>('/pedidos/', { params: { size: 100, ...params } })
+      .then(r => r.data.items),
   getById: (id: number) =>
     axiosInstance.get<Pedido>(`/pedidos/${id}`).then(r => r.data),
   getHistorial: (id: number) =>

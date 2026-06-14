@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { pedidosApi } from '../api/index'
-import { useAuth } from '../store/authStore'
+import { pedidosApi } from '../../shared/api/index'
+import { useAuth } from '../../store/authStore'
+import { useWS } from '../../store/wsStore'
 import { useState } from 'react'
-import { PedidoWSListener } from '../hooks/Useorderstatusws'
+import { PedidoWSListener } from '../../shared/hooks/useOrderStatusWS'
 
 const ESTADO_LABELS: Record<string, string> = {
   PENDIENTE:  '🕐 Pendiente',
@@ -25,6 +26,7 @@ export default function MisPedidosPage() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
+  const wsConectado = useWS(s => s.connected)
   const [cancelandoId, setCancelandoId] = useState<number | null>(null)
   const [motivo, setMotivo] = useState('')
 
@@ -55,9 +57,31 @@ export default function MisPedidosPage() {
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
+  // Hay seguimiento WS activo solo si tenés pedidos en curso (no entregados/cancelados).
+  const hayActivos = pedidosOrdenados.some(
+    (p) => !['ENTREGADO', 'CANCELADO'].includes(p.estado_codigo)
+  )
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-white mb-6">📦 Mis pedidos</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-white">📦 Mis pedidos</h1>
+        {hayActivos && (
+          <span
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+              wsConectado
+                ? 'bg-green-900/40 text-green-300'
+                : 'bg-gray-800 text-gray-500'
+            }`}
+            title={wsConectado
+              ? 'Recibís los cambios de estado al instante'
+              : 'Reconectando… mientras tanto se actualiza cada 30s'}
+          >
+            <span className={`w-2 h-2 rounded-full ${wsConectado ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
+            {wsConectado ? 'En vivo' : 'Sin conexión'}
+          </span>
+        )}
+      </div>
 
       {pedidosOrdenados
         .filter((p) => !['ENTREGADO', 'CANCELADO'].includes(p.estado_codigo))
@@ -114,6 +138,10 @@ export default function MisPedidosPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-orange-400 font-bold">${Number(pedido.total).toFixed(2)}</span>
+                <button onClick={() => navigate(`/pedidos/${pedido.id}`)}
+                  className="text-gray-300 hover:text-white text-xs border border-gray-700 hover:border-orange-500/50 px-3 py-1 rounded-lg transition-colors">
+                  Ver seguimiento →
+                </button>
                 {(pedido.estado_codigo === 'PENDIENTE' || pedido.estado_codigo === 'CONFIRMADO') && (
                   <button onClick={() => setCancelandoId(pedido.id)}
                     className="text-red-400 hover:text-red-300 text-xs border border-red-800 px-3 py-1 rounded-lg transition-colors">

@@ -59,13 +59,16 @@ proyecto_parcial/
 │       └── db/seed.py           # seed obligatorio (roles, estados, formas de pago, unidades, admin)
 │
 ├── frontend-store/              # Tienda (cliente) — React + Vite — http://localhost:5173
-│   └── src/  (api · store[Zustand] · hooks[useOrderStatusWS] · pages · components · types)
+│   └── src/  (Feature-Sliced Design)
+│       ├── features/   auth · catalogo · carrito · checkout · pedidos
+│       ├── shared/     api · components · hooks · types · utils
+│       └── store/      authStore · carritoStore · wsStore · uiStore · pagoStore
 │
 └── frontend-admin/              # Panel de administración — React + Vite — http://localhost:5174
     └── src/  (Feature-Sliced Design)
-        ├── features/   auth · dashboard · productos · categorias · ingredientes · pedidos
+        ├── features/   auth · dashboard · productos · categorias · ingredientes · pedidos · stock
         ├── shared/     api · components · hooks · types · utils
-        ├── context/    AuthContext
+        ├── store/      authStore · wsStore
         └── routes/     PrivateRoute
 ```
 
@@ -200,19 +203,30 @@ La documentación interactiva completa está en **`/docs`**.
 ## 🔌 WebSocket — seguimiento en tiempo real
 
 ```
-ws://localhost:8000/api/v1/pedidos/ws?token=<access_token>[&pedido_id=<id>]
+ws://localhost:8000/api/v1/ws/pedidos/{pedido_id}?token=<access_token>   # canal de un pedido (cliente)
+ws://localhost:8000/api/v1/ws/admin/pedidos?token=<access_token>          # feed de todos (ADMIN/PEDIDOS)
 ```
 
-- **Con `pedido_id`** → suscribe al canal de ese pedido (el cliente que lo sigue).
-- **Sin `pedido_id`** → feed `admin` de todos los pedidos (solo `ADMIN`/`PEDIDOS`).
+- **`/ws/pedidos/{id}`** → suscribe al canal de ese pedido (el cliente que lo sigue).
+- **`/ws/admin/pedidos`** → feed de todos los pedidos (solo `ADMIN`/`PEDIDOS`).
 - El broadcast se dispara **después del commit** del Unit of Work.
-- En el frontend lo encapsula el hook `useOrderStatusWS` (reconexión exponencial + indicador de conexión).
+- En el frontend lo encapsula el hook `useOrderStatusWS` (reconexión exponencial + badge de conexión + resync al reconectar).
+
+---
+
+## 📄 Convenciones de la API
+
+- **Paginación** (envelope estándar): los listados `GET /productos` y `GET /pedidos` aceptan `?page=1&size=20` y devuelven
+  ```json
+  { "items": [...], "total": 42, "page": 1, "size": 20, "pages": 3 }
+  ```
+- **Errores** (RFC 7807 simplificado): `{ "detail": "mensaje", "code": "NOT_FOUND" }`.
 
 ---
 
 ## 🧪 Tests
 
-Suite con **pytest** sobre **SQLite in-memory** (no toca la base MySQL real):
+Suite con **pytest** sobre **SQLite** (archivo temporal aislado por test; no toca la base MySQL real):
 
 ```bash
 cd backend
@@ -222,7 +236,7 @@ pytest                          # correr toda la suite
 pytest --cov=app                # con reporte de cobertura
 ```
 
-Cubre: registro/login/logout/refresh, rate limiting, FSM de pedidos, historial append-only (RN-02), reglas de cancelación (RN-05), pagos MercadoPago (SDK mockeado), uploads Cloudinary (SDK mockeado) y estadísticas (RBAC + exclusión de cancelados).
+**32 tests · cobertura 78%.** Cubre: registro/login/logout/refresh, rate limiting, FSM de pedidos, historial append-only (RN-02), reglas de cancelación (RN-05), pagos MercadoPago (SDK mockeado), uploads Cloudinary (SDK mockeado), estadísticas (RBAC + exclusión de cancelados), **WebSocket** (`websocket_connect`: broadcast post-commit al canal del pedido y al feed admin, cierre por token inválido), **productos** (CRUD + stock + roundtrip de `imagenes_url`), **paginación** (envelope) y **formato de error** (RFC 7807).
 
 ---
 

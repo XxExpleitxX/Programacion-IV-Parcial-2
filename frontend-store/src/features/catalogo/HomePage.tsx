@@ -1,8 +1,11 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { productosApi, categoriasApi } from '../api/index'
-import ProductoCard from '../components/ProductoCard'
-import type { Categoria } from '../types/index'
+import { useEffect, useState } from 'react'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { productosApi, categoriasApi } from '../../shared/api/index'
+import ProductoCard from './ProductoCard'
+import { useDebounce } from '../../shared/hooks/useDebounce'
+import type { Categoria } from '../../shared/types/index'
+
+const PAGE_SIZE = 8
 
 function aplanarCategorias(cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] {
   return cats.flatMap(c => [{ cat: c, nivel }, ...aplanarCategorias(c.subcategorias ?? [], nivel + 1)])
@@ -12,17 +15,32 @@ export default function HomePage() {
   const [search, setSearch] = useState('')
   const [categoriaId, setCategoriaId] = useState<number | null>(null)
   const [precioMax, setPrecioMax] = useState<number | null>(null)
+  const [page, setPage] = useState(1)
 
-  // Query de productos
-  const { data: productos = [], isLoading } = useQuery({
-    queryKey: ['store-productos', search, categoriaId, precioMax],
+  // La búsqueda se debouncea para no pegarle a la API en cada tecla.
+  const searchDebounced = useDebounce(search, 350)
+
+  // Al cambiar cualquier filtro, volvemos a la primera página.
+  useEffect(() => { setPage(1) }, [searchDebounced, categoriaId, precioMax])
+
+  // Query de productos (paginada con page/size; la API devuelve el envelope).
+  const { data, isLoading, isFetching, isPlaceholderData } = useQuery({
+    queryKey: ['store-productos', searchDebounced, categoriaId, precioMax, page],
     queryFn: () => productosApi.getAll({
-      nombre: search || undefined,
+      nombre: searchDebounced || undefined,
       categoria_id: categoriaId ?? undefined,
       precio_max: precioMax ?? undefined,
       disponible: true,
+      page,
+      size: PAGE_SIZE,
     }),
+    placeholderData: keepPreviousData,   // evita parpadeo al cambiar de página
   })
+
+  const productos = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalPaginas = data?.pages ?? 1
+  const hayPaginaSiguiente = page < totalPaginas
 
   // Query de categorías
   const { data: arbolCats = [] } = useQuery({
@@ -47,7 +65,7 @@ export default function HomePage() {
         {/* Contador de resultados */}
         {!isLoading && (
            <span className="text-gray-500 text-sm font-medium bg-gray-800 px-3 py-1 rounded-full">
-             {productos.length} productos encontrados
+             {total} {total === 1 ? 'producto' : 'productos'}
            </span>
         )}
       </div>
@@ -149,10 +167,33 @@ export default function HomePage() {
             </div>
           ) : (
             /* Resultados Reales */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 transition-opacity ${
+              isFetching && isPlaceholderData ? 'opacity-60' : 'opacity-100'
+            }`}>
               {productos.map(p => (
                 <ProductoCard key={p.id} producto={p} />
               ))}
+            </div>
+          )}
+
+          {/* Paginación */}
+          {(page > 1 || hayPaginaSiguiente) && productos.length > 0 && (
+            <div className="flex items-center justify-center gap-4 mt-10">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || isFetching}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Anterior
+              </button>
+              <span className="text-gray-400 text-sm font-medium">Página {page} de {totalPaginas}</span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={!hayPaginaSiguiente || isFetching}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente →
+              </button>
             </div>
           )}
         </>

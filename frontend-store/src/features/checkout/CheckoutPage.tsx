@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { CardPayment } from '@mercadopago/sdk-react'
-import { pedidosApi, pagosApi } from '../api/index'
-import { useCarrito } from '../store/carritoStore'
-import { useAuth } from '../store/authStore'
-import { usePago } from '../store/pagoStore'
-import { useUI } from '../store/uiStore'
-import type { Pedido } from '../types'
+import { pedidosApi, pagosApi } from '../../shared/api/index'
+import { getApiErrorMessage } from '../../shared/api/errors'
+import { useCarrito } from '../../store/carritoStore'
+import { useAuth } from '../../store/authStore'
+import { usePago } from '../../store/pagoStore'
+import { useUI } from '../../store/uiStore'
+import type { Pedido } from '../../shared/types'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
@@ -35,7 +36,7 @@ export default function CheckoutPage() {
         navigate(`/pedidos/${pedido.id}`)
       }
     },
-    onError: (err: any) => setError(err.response?.data?.detail ?? 'Error al crear el pedido'),
+    onError: (err) => setError(getApiErrorMessage(err, 'Error al crear el pedido')),
   })
 
   if (!isAuthenticated()) {
@@ -65,7 +66,7 @@ export default function CheckoutPage() {
         <div className="bg-white rounded-xl p-4">
           <CardPayment
             initialization={{ amount: pedidoMP.total }}
-            onSubmit={async (formData: any) => {
+            onSubmit={async (formData) => {
               setError(null)
               try {
                 const pago = await pagosApi.crear({
@@ -73,7 +74,7 @@ export default function CheckoutPage() {
                   token: formData.token,
                   payment_method_id: formData.payment_method_id,
                   installments: formData.installments,
-                  payer_email: formData.payer?.email,
+                  payer_email: formData.payer?.email ?? '',
                   issuer_id: formData.issuer_id != null ? String(formData.issuer_id) : undefined,
                 })
                 setUltimoPago({
@@ -88,8 +89,8 @@ export default function CheckoutPage() {
                 } else {
                   setError(`Pago ${pago.mp_status}${pago.mp_status_detail ? `: ${pago.mp_status_detail}` : ''}. Probá con otra tarjeta.`)
                 }
-              } catch (e: any) {
-                setError(e.response?.data?.detail ?? 'Error procesando el pago.')
+              } catch (e) {
+                setError(getApiErrorMessage(e, 'Error procesando el pago.'))
               }
             }}
             onError={() => setError('Error en el formulario de pago. Revisá los datos.')}

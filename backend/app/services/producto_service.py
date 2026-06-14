@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from app.models import Producto, ProductoCategoria
 from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead, CategoriaRead
+from app.schemas.pagination import paginate
 from app.unit_of_work import UnitOfWork
 
 
@@ -35,20 +36,22 @@ def _build_read(producto: Producto) -> ProductoRead:
 
 def get_all(
     uow: UnitOfWork,
-    offset: int = 0,
-    limit: int = 20,
+    page: int = 1,
+    size: int = 20,
     nombre: Optional[str] = None,
     disponible: Optional[bool] = None,
     categoria_id: Optional[int] = None,
     precio_min: Optional[Decimal] = None,
     precio_max: Optional[Decimal] = None,
-) -> List[ProductoRead]:
-    productos = uow.productos.get_all(
-        offset=offset, limit=limit, nombre=nombre,
-        disponible=disponible, categoria_id=categoria_id,
+) -> dict:
+    """Devuelve el envelope de paginación {items, total, page, size, pages}."""
+    filtros = dict(
+        nombre=nombre, disponible=disponible, categoria_id=categoria_id,
         precio_min=precio_min, precio_max=precio_max,
     )
-    return [_build_read(p) for p in productos]
+    productos = uow.productos.get_all(offset=(page - 1) * size, limit=size, **filtros)
+    total = uow.productos.count_all(**filtros)
+    return paginate([_build_read(p) for p in productos], total, page, size)
 
 
 def get_by_id(uow: UnitOfWork, producto_id: int) -> ProductoRead:
@@ -173,6 +176,21 @@ def patch_disponibilidad(uow: UnitOfWork, producto_id: int, disponible: bool) ->
     if not producto or producto.deleted_at is not None:
         raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")
     producto.disponible = disponible
+    producto.updated_at = datetime.utcnow()
+    uow.productos.add(producto)
+    uow.flush()
+    uow.refresh(producto)
+    return _build_read(producto)
+
+
+def patch_stock(uow: UnitOfWork, producto_id: int, stock_cantidad: int) -> ProductoRead:
+    """Actualiza solo el stock de un producto. Permitido para ADMIN y STOCK."""
+    producto = uow.productos.get_by_id(producto_id)
+    if not producto or producto.deleted_at is not None:
+        raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")
+    if stock_cantidad < 0:
+        raise HTTPException(status_code=422, detail="El stock no puede ser negativo")
+    producto.stock_cantidad = stock_cantidad
     producto.updated_at = datetime.utcnow()
     uow.productos.add(producto)
     uow.flush()

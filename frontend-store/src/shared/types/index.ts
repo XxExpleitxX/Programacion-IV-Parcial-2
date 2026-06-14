@@ -1,3 +1,12 @@
+// ─── Paginación (envelope estándar de la API) ────────────
+export interface Paginated<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
 // ─── Categoria ───────────────────────────────────────────
 export interface Categoria {
   id: number
@@ -59,9 +68,20 @@ export interface Pedido {
   detalles: DetallePedido[]
 }
 
+// Un registro del audit trail append-only (HistorialEstadoPedido).
+export interface HistorialEstado {
+  id: number
+  pedido_id: number
+  estado_desde: string | null   // null en la transición inicial (RN-02)
+  estado_hacia: string
+  motivo: string | null
+  created_at: string
+}
+
 // ─── Auth ─────────────────────────────────────────────────
 export interface AuthUser {
   username: string
-  token: string
+  token: string                 // access token (30 min)
+  refresh_token?: string        // refresh token (7 días) — para renovar el access en 401
   roles: string[]
 }

@@ -27,6 +27,7 @@ from app.models.pedido import Pedido
 from app.models.detalle_pedido import DetallePedido
 from app.models.historial_estado_pedido import HistorialEstadoPedido
 from app.schemas.pago_schema import PedidoCreate, AvanzarEstadoRequest
+from app.schemas.pagination import paginate
 from app.unit_of_work import UnitOfWork
 
 
@@ -191,14 +192,16 @@ class PedidoService:
         return pedido
 
     @staticmethod
-    def get_pedidos_usuario(uow: UnitOfWork, usuario_id: int) -> list[Pedido]:
-        # Antes: uow.session.exec(select(...)). Ahora: el repo.
-        return uow.pedidos.get_by_usuario(usuario_id)
+    def get_pedidos_usuario(uow: UnitOfWork, usuario_id: int, page: int = 1, size: int = 20) -> dict:
+        items = uow.pedidos.get_by_usuario(usuario_id, offset=(page - 1) * size, limit=size)
+        total = uow.pedidos.count_by_usuario(usuario_id)
+        return paginate(items, total, page, size)
 
     @staticmethod
-    def get_todos_pedidos(uow: UnitOfWork, estado: Optional[str] = None) -> list[Pedido]:
-        # Antes: query con select() acá. Ahora vive en el repo.
-        return uow.pedidos.get_all_active(estado=estado)
+    def get_todos_pedidos(uow: UnitOfWork, estado: Optional[str] = None, page: int = 1, size: int = 20) -> dict:
+        items = uow.pedidos.get_all_active(estado=estado, offset=(page - 1) * size, limit=size)
+        total = uow.pedidos.count_all_active(estado=estado)
+        return paginate(items, total, page, size)
 
     @staticmethod
     def get_pedido(uow: UnitOfWork, pedido_id: int, usuario_id: int, roles: list[str]) -> Pedido:

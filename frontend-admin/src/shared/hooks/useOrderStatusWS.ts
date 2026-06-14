@@ -9,7 +9,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 
-const WS_BASE = 'ws://localhost:8000/api/v1/pedidos/ws'
+const WS_ROOT = 'ws://localhost:8000/api/v1/ws'
 const MAX_INTENTOS = 10
 
 interface Options {
@@ -20,8 +20,8 @@ interface Options {
 
 function getToken(): string | null {
   try {
-    const raw = localStorage.getItem('auth_user')
-    return raw ? (JSON.parse(raw)?.token ?? null) : null
+    const raw = localStorage.getItem('admin_auth')
+    return raw ? (JSON.parse(raw)?.state?.user?.token ?? null) : null
   } catch {
     return null
   }
@@ -44,8 +44,9 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
 
     const buildUrl = () => {
       const q = new URLSearchParams({ token })
-      if (pedidoId != null) q.set('pedido_id', String(pedidoId))
-      return `${WS_BASE}?${q.toString()}`
+      // Ruta nombrada: canal del pedido o feed admin.
+      const path = pedidoId != null ? `/pedidos/${pedidoId}` : '/admin/pedidos'
+      return `${WS_ROOT}${path}?${q.toString()}`
     }
 
     const conectar = () => {

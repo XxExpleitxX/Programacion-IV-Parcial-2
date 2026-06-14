@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import type { Producto } from '../types/index'
-import { useCarrito } from '../store/carritoStore'
-import { useUI } from '../store/uiStore'
+import type { Producto } from '../../shared/types/index'
+import { useCarrito } from '../../store/carritoStore'
+import { useUI } from '../../store/uiStore'
+import { cldThumb } from '../../shared/utils/cloudinary'
 
 interface Props {
   producto: Producto
@@ -24,7 +25,7 @@ export default function ProductoCard({ producto }: Props) {
       <div className="relative h-40 bg-gray-800 overflow-hidden">
         {producto.imagenes_url && producto.imagenes_url.length > 0 ? (
           <img
-            src={producto.imagenes_url[0]}
+            src={cldThumb(producto.imagenes_url[0], 'f_auto,q_auto,c_fill,w_400,h_320')}
             alt={producto.nombre}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

@@ -1,3 +1,12 @@
+// ─── Paginación (envelope estándar de la API) ────────────
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
 // ─── UnidadMedida ─────────────────────────────────────────
 export interface UnidadMedida {
   id: number;

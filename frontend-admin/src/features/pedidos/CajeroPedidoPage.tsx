@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pedidosApi, productosApi } from '../../shared/api'
 import type { Pedido, DetallePedido, Producto } from '../../shared/types'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../store/authStore'
 import { useOrderStatusWS } from '../../shared/hooks/useOrderStatusWS'
 
 // ── FSM ───────────────────────────────────────────────────────────────────
@@ -235,7 +235,7 @@ function NuevoPedidoPanel({ onPedidoCreado }: { onPedidoCreado: () => void }) {
 
 export default function CajeroPedidosPage() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
+  const user = useAuthStore((s) => s.user)
   const [filtroEstado, setFiltroEstado] = useState('')
   const [modalData, setModalData] = useState<{ pedido: Pedido; estadoHacia: string } | null>(null)
 

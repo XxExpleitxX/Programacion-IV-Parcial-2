@@ -1,5 +1,11 @@
+/** Nodo mínimo del árbol de categorías que necesitan estos helpers. */
+interface CategoriaNodo {
+  id: number
+  subcategorias?: CategoriaNodo[]
+}
+
 // Helper — dada una categoría y el árbol completo, devuelve todos los IDs de sus descendientes
-export function getDescendantIds(cat: { id: number; subcategorias?: any[] }): number[] {
+export function getDescendantIds(cat: CategoriaNodo): number[] {
   const subs = cat.subcategorias ?? []
   return [cat.id, ...subs.flatMap(getDescendantIds)]
 }
@@ -8,11 +14,11 @@ export function getDescendantIds(cat: { id: number; subcategorias?: any[] }): nu
 // Al marcar una hija, NO marca el padre
 export function toggleCategoriaConCascada(
   id: number,
-  arbol: any[],
+  arbol: CategoriaNodo[],
   seleccionados: number[],
 ): number[] {
   // Buscar el nodo en el árbol
-  const encontrar = (cats: any[]): any | null => {
+  const encontrar = (cats: CategoriaNodo[]): CategoriaNodo | null => {
     for (const c of cats) {
       if (c.id === id) return c
       const found = encontrar(c.subcategorias ?? [])

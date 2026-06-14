@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useCarrito } from '../store/carritoStore'
+import { useCarrito } from '../../store/carritoStore'
 
 export default function CarritoPage() {
   const navigate = useNavigate()

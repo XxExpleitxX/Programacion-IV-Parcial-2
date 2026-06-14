@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Path, status
 from pydantic import BaseModel
 from app.core.security import require_admin, require_admin_or_editor, require_authenticated
 from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead
+from app.schemas.pagination import Paginated
 from app.services import producto_service
 from app.models import Usuario
 from app.unit_of_work import UnitOfWork, get_uow
@@ -17,14 +18,18 @@ class DisponibilidadUpdate(BaseModel):
     disponible: bool
 
 
+class StockUpdate(BaseModel):
+    stock_cantidad: int
+
+
 # ─── Lectura ──────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=List[ProductoRead])
+@router.get("/", response_model=Paginated[ProductoRead])
 def listar_productos(
     uow: UoWDep,
     user: Usuario = Depends(require_authenticated),
-    offset: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    page: Annotated[int, Query(ge=1)] = 1,
+    size: Annotated[int, Query(ge=1, le=100)] = 20,
     nombre: Annotated[Optional[str], Query(description="Buscar por nombre")] = None,
     disponible: Annotated[Optional[bool], Query(description="Filtrar por disponibilidad")] = None,
     categoria_id: Annotated[Optional[int], Query(description="Filtrar por categoría")] = None,
@@ -32,7 +37,7 @@ def listar_productos(
     precio_max: Annotated[Optional[Decimal], Query(description="Precio máximo")] = None,
 ):
     return producto_service.get_all(
-        uow, offset, limit, nombre, disponible, categoria_id, precio_min, precio_max
+        uow, page, size, nombre, disponible, categoria_id, precio_min, precio_max
     )
 
 
@@ -86,6 +91,17 @@ def actualizar_disponibilidad(
     """Activa o desactiva un producto. Permitido para ADMIN y STOCK."""
     resultado = producto_service.patch_disponibilidad(uow, producto_id, data.disponible)
     return resultado
+
+
+@router.patch("/{producto_id}/stock", response_model=ProductoRead)
+def actualizar_stock(
+    uow: UoWDep,
+    producto_id: Annotated[int, Path(ge=1)],
+    data: StockUpdate,
+    user: Usuario = Depends(require_admin_or_editor),
+):
+    """Actualiza el stock de un producto. Permitido para ADMIN y STOCK."""
+    return producto_service.patch_stock(uow, producto_id, data.stock_cantidad)
 
 
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)

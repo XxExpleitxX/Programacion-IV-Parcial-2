@@ -1,14 +1,15 @@
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useCarrito } from './store/carritoStore'
 import { useAuth } from './store/authStore'
-import { authApi } from './api/index'
-import HomePage from './pages/HomePage'
-import ProductoDetallePage from './pages/ProductoDetallePage'
-import CarritoPage from './pages/CarritoPage'
-import CheckoutPage from './pages/CheckoutPage'
-import MisPedidosPage from './pages/MisPedidosPage'
-import LoginPage from './pages/LoginPage'
-import Toasts from './components/Toasts'
+import { authApi } from './shared/api/index'
+import HomePage from './features/catalogo/HomePage'
+import ProductoDetallePage from './features/catalogo/ProductoDetallePage'
+import CarritoPage from './features/carrito/CarritoPage'
+import CheckoutPage from './features/checkout/CheckoutPage'
+import MisPedidosPage from './features/pedidos/MisPedidosPage'
+import SeguimientoPedidoPage from './features/pedidos/SeguimientoPedidoPage'
+import LoginPage from './features/auth/LoginPage'
+import Toasts from './shared/components/Toasts'
 
 function Header() {
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ function Header() {
   if (location.pathname === '/login') return null
 
   const handleLogout = async () => {
-    await authApi.logout()
+    await authApi.logout(user?.refresh_token)
     logout()
     navigate('/')
   }
@@ -102,7 +103,7 @@ export default function App() {
         <Route path="/carrito" element={<CarritoPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/mis-pedidos" element={<MisPedidosPage />} />
-        <Route path="/pedidos/:id" element={<MisPedidosPage />} />
+        <Route path="/pedidos/:id" element={<SeguimientoPedidoPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
       <Toasts />

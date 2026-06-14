@@ -1,12 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { productosApi } from '../../shared/api'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../store/authStore'
 
 export default function ProductoDetallePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { role } = useAuth()
+  const role = useAuthStore((s) => s.user?.rol ?? null)
   const esAdmin = role === 'ADMIN'
 
   const { data: producto, isLoading, isError } = useQuery({

@@ -1,6 +1,9 @@
 /**
  * App.tsx — enrutamiento principal del panel de administración.
  *
+ * Estado de autenticación: Zustand (authStore) con persist.
+ * Sin AuthProvider/AuthContext — el store es global por naturaleza.
+ *
  * Estructura Feature-Sliced Design:
  *   src/
  *   ├── features/
@@ -11,30 +14,33 @@
  *   │   ├── ingredientes/  IngredientesPage
  *   │   └── pedidos/       CajeroPedidoPage
  *   ├── shared/
- *   │   ├── api/           axiosInstance + estadisticasApi + demás APIs
- *   │   ├── components/    Modal, etc.
+ *   │   ├── api/           axiosInstance + APIs
+ *   │   ├── components/    Modal
  *   │   ├── hooks/         useOrderStatusWS
- *   │   └── types/         index.ts (todos los tipos)
- *   └── context/           AuthContext (React Context para auth)
- *
- * Flujo de imports: Pages → Shared (api, hooks, types, components)
- * Nunca al revés.
+ *   │   └── types/         tipos compartidos
+ *   └── store/
+ *       ├── authStore.ts   ← Zustand + persist (reemplaza AuthContext)
+ *       └── wsStore.ts     ← Zustand sin persist (estado de red)
  */
 
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 
 // ── Features ──────────────────────────────────────────────
-import LoginPage        from './features/auth/LoginPage'
-import DashboardPage    from './features/dashboard/DashboardPage'
-import ProductosPage    from './features/productos/ProductosPage'
+import LoginPage          from './features/auth/LoginPage'
+import DashboardPage      from './features/dashboard/DashboardPage'
+import ProductosPage      from './features/productos/ProductosPage'
 import ProductoDetallePage from './features/productos/ProductoDetallePage'
-import CategoriasPage   from './features/categorias/CategoriasPage'
-import IngredientesPage from './features/ingredientes/IngredientesPage'
-import CajeroPedidosPage from './features/pedidos/CajeroPedidoPage'
+import CategoriasPage     from './features/categorias/CategoriasPage'
+import IngredientesPage   from './features/ingredientes/IngredientesPage'
+import CajeroPedidosPage  from './features/pedidos/CajeroPedidoPage'
+import StockPage          from './features/stock/StockPage'
 
 // ── Shared ────────────────────────────────────────────────
 import PrivateRoute from './routes/PrivateRoute'
-import { useAuth }  from './context/AuthContext'
+
+// ── Store (Zustand) ───────────────────────────────────────
+import { useAuthStore } from './store/authStore'
+import { useWSStore }   from './store/wsStore'
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (
@@ -54,12 +60,18 @@ function NavItem({ to, label }: { to: string; label: string }) {
 }
 
 function Header() {
-  const { user, role, logout } = useAuth()
+  // Suscripción por slice — solo re-renderiza si cambia user.rol
+  const user    = useAuthStore((s) => s.user)
+  const logout  = useAuthStore((s) => s.logout)
+  // Badge de conexión WS (RN-06 UI)
+  const wsOn    = useWSStore((s) => s.connected)
   const navigate = useNavigate()
-  const esAdmin  = role === 'ADMIN'
-  const esCajero = role === 'PEDIDOS' || role === 'ADMIN'
 
-  const handleLogout = () => { logout(); navigate('/login') }
+  const esAdmin  = user?.rol === 'ADMIN'
+  const esCajero = user?.rol === 'PEDIDOS' || user?.rol === 'ADMIN'
+  const esStock  = user?.rol === 'STOCK' || user?.rol === 'ADMIN'
+
+  const handleLogout = async () => { await logout(); navigate('/login') }
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
@@ -73,11 +85,22 @@ function Header() {
 
         {user && (
           <nav className="flex items-center gap-1">
-            {esAdmin && <NavItem to="/dashboard"    label="📊 Dashboard"   />}
-            {esAdmin && <NavItem to="/categorias"   label="Categorías"     />}
-            {esAdmin && <NavItem to="/ingredientes" label="Ingredientes"   />}
+            {esAdmin  && <NavItem to="/dashboard"    label="📊 Dashboard"   />}
+            {esAdmin  && <NavItem to="/categorias"   label="Categorías"     />}
+            {esAdmin  && <NavItem to="/ingredientes" label="Ingredientes"   />}
             <NavItem to="/productos" label="Productos" />
+            {esStock  && <NavItem to="/stock" label="📦 Stock" />}
             {esCajero && <NavItem to="/cajero" label="🧾 Cajero" />}
+
+            {/* Badge conexión WS */}
+            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+              wsOn
+                ? 'bg-green-900/40 text-green-400'
+                : 'bg-slate-800 text-slate-500'
+            }`}>
+              {wsOn ? '● En vivo' : '○ Sin WS'}
+            </span>
+
             <button
               onClick={handleLogout}
               className="ml-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
@@ -100,31 +123,27 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Raíz → Dashboard para ADMIN */}
           <Route path="/" element={
             <PrivateRoute role="ADMIN"><DashboardPage /></PrivateRoute>
           } />
-
           <Route path="/dashboard" element={
             <PrivateRoute role="ADMIN"><DashboardPage /></PrivateRoute>
           } />
-
           <Route path="/categorias" element={
             <PrivateRoute role="ADMIN"><CategoriasPage /></PrivateRoute>
           } />
-
           <Route path="/ingredientes" element={
             <PrivateRoute role="ADMIN"><IngredientesPage /></PrivateRoute>
           } />
-
           <Route path="/productos" element={
             <PrivateRoute><ProductosPage /></PrivateRoute>
           } />
-
           <Route path="/productos/:id" element={
             <PrivateRoute><ProductoDetallePage /></PrivateRoute>
           } />
-
+          <Route path="/stock" element={
+            <PrivateRoute role="STOCK"><StockPage /></PrivateRoute>
+          } />
           <Route path="/cajero" element={
             <PrivateRoute role="PEDIDOS"><CajeroPedidosPage /></PrivateRoute>
           } />

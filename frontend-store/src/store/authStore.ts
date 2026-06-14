@@ -4,7 +4,7 @@
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AuthUser } from '../types/index'
+import type { AuthUser } from '../shared/types/index'
 
 interface AuthState {
   user: AuthUser | null
