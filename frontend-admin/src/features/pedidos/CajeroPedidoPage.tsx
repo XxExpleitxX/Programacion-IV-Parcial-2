@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { pedidosApi, productosApi } from '../api'
-import type { Pedido, DetallePedido, Producto } from '../types'
-import { useAuth } from '../context/AuthContext'
-import { useOrderStatusWS } from '../hooks/Useorderstatusws'
+import { pedidosApi, productosApi } from '../../shared/api'
+import type { Pedido, DetallePedido, Producto } from '../../shared/types'
+import { useAuth } from '../../context/AuthContext'
+import { useOrderStatusWS } from '../../shared/hooks/useOrderStatusWS'
 
 // ── FSM ───────────────────────────────────────────────────────────────────
 

@@ -36,6 +36,7 @@ Estado real de cada ítem del checklist oficial de entrega.
 
 ## 📌 Pendientes
 
-1. **Dashboard de estadísticas en el frontend:** consumir los endpoints `/estadisticas/*` (ya implementados en el backend) con gráficos en el panel admin. *(Suma en el criterio "Panel Admin", no es un CE.)*
-2. **CE-15 / CE-01 / CE-16:** grabar el video mostrando WS + Cloudinary en vivo y publicar/verificar el repo público.
-3. *(Opcional)* Subir cobertura de tests agregando `test_productos` y `test_categorias`.
+1. **CE-15 / CE-01 / CE-16:** grabar el video mostrando WS + Cloudinary en vivo y publicar/verificar el repo público.
+2. *(Opcional)* Subir cobertura de tests agregando `test_productos` y `test_categorias`.
+
+> **Hecho recientemente:** dashboard de estadísticas en el panel admin (KPIs + gráficos recharts consumiendo `/estadisticas/*`) y reestructuración del **frontend-admin a Feature-Sliced Design** (`features/` + `shared/`).

@@ -132,3 +132,39 @@ export interface Pedido {
   updated_at: string;
   detalles: DetallePedido[];
 }
+// ─── Estadísticas ─────────────────────────────────────────
+export interface ResumenKPI {
+  ventas_hoy: number
+  ticket_promedio: number
+  pedidos_activos: number
+  ventas_mes: number
+}
+
+export interface VentasPeriodoItem {
+  periodo: string
+  total_ventas: number
+  cantidad_pedidos: number
+}
+
+export interface ProductoTopItem {
+  producto_id: number
+  nombre: string
+  ingresos: number
+  cantidad_vendida: number
+}
+
+export interface PedidosEstadoItem {
+  estado_codigo: string
+  cantidad: number
+}
+
+export interface IngresoFormaPagoItem {
+  forma_pago_codigo: string
+  total: number
+  cantidad: number
+}
+
+export interface IngresosResponse {
+  items: IngresoFormaPagoItem[]
+  total_general: number
+}

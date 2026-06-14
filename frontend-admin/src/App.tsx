@@ -1,12 +1,40 @@
+/**
+ * App.tsx — enrutamiento principal del panel de administración.
+ *
+ * Estructura Feature-Sliced Design:
+ *   src/
+ *   ├── features/
+ *   │   ├── auth/          LoginPage
+ *   │   ├── dashboard/     DashboardPage (KPIs + recharts)
+ *   │   ├── productos/     ProductosPage, ProductoDetallePage
+ *   │   ├── categorias/    CategoriasPage
+ *   │   ├── ingredientes/  IngredientesPage
+ *   │   └── pedidos/       CajeroPedidoPage
+ *   ├── shared/
+ *   │   ├── api/           axiosInstance + estadisticasApi + demás APIs
+ *   │   ├── components/    Modal, etc.
+ *   │   ├── hooks/         useOrderStatusWS
+ *   │   └── types/         index.ts (todos los tipos)
+ *   └── context/           AuthContext (React Context para auth)
+ *
+ * Flujo de imports: Pages → Shared (api, hooks, types, components)
+ * Nunca al revés.
+ */
+
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
-import CategoriasPage from './pages/CategoriasPage'
-import IngredientesPage from './pages/IngredientesPage'
-import ProductosPage from './pages/ProductosPage'
-import ProductoDetallePage from './pages/ProductoDetallePage'
-import LoginPage from './pages/LoginPage'
-import CajeroPedidosPage from './pages/CajeroPedidoPage'
+
+// ── Features ──────────────────────────────────────────────
+import LoginPage        from './features/auth/LoginPage'
+import DashboardPage    from './features/dashboard/DashboardPage'
+import ProductosPage    from './features/productos/ProductosPage'
+import ProductoDetallePage from './features/productos/ProductoDetallePage'
+import CategoriasPage   from './features/categorias/CategoriasPage'
+import IngredientesPage from './features/ingredientes/IngredientesPage'
+import CajeroPedidosPage from './features/pedidos/CajeroPedidoPage'
+
+// ── Shared ────────────────────────────────────────────────
 import PrivateRoute from './routes/PrivateRoute'
-import { useAuth } from './context/AuthContext'
+import { useAuth }  from './context/AuthContext'
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (
@@ -28,13 +56,10 @@ function NavItem({ to, label }: { to: string; label: string }) {
 function Header() {
   const { user, role, logout } = useAuth()
   const navigate = useNavigate()
-  const esAdmin = role === 'ADMIN'
+  const esAdmin  = role === 'ADMIN'
   const esCajero = role === 'PEDIDOS' || role === 'ADMIN'
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = () => { logout(); navigate('/login') }
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
@@ -43,15 +68,16 @@ function Header() {
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">P4</span>
           </div>
-          <span className="font-display text-lg text-slate-100">Programación IV</span>
+          <span className="font-display text-lg text-slate-100">Food Store Admin</span>
         </div>
 
         {user && (
           <nav className="flex items-center gap-1">
-            {esAdmin && <NavItem to="/categorias" label="Categorías" />}
-            {esAdmin && <NavItem to="/ingredientes" label="Ingredientes" />}
+            {esAdmin && <NavItem to="/dashboard"    label="📊 Dashboard"   />}
+            {esAdmin && <NavItem to="/categorias"   label="Categorías"     />}
+            {esAdmin && <NavItem to="/ingredientes" label="Ingredientes"   />}
             <NavItem to="/productos" label="Productos" />
-            {esCajero && <NavItem to="/cajero" label="Cajero" />}
+            {esCajero && <NavItem to="/cajero" label="🧾 Cajero" />}
             <button
               onClick={handleLogout}
               className="ml-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
@@ -74,8 +100,13 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
+          {/* Raíz → Dashboard para ADMIN */}
           <Route path="/" element={
-            <PrivateRoute><ProductosPage /></PrivateRoute>
+            <PrivateRoute role="ADMIN"><DashboardPage /></PrivateRoute>
+          } />
+
+          <Route path="/dashboard" element={
+            <PrivateRoute role="ADMIN"><DashboardPage /></PrivateRoute>
           } />
 
           <Route path="/categorias" element={
@@ -94,7 +125,6 @@ export default function App() {
             <PrivateRoute><ProductoDetallePage /></PrivateRoute>
           } />
 
-          {/* Pantalla cajero — ADMIN y PEDIDOS */}
           <Route path="/cajero" element={
             <PrivateRoute role="PEDIDOS"><CajeroPedidosPage /></PrivateRoute>
           } />

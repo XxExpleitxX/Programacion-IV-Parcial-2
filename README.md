@@ -62,7 +62,11 @@ proyecto_parcial/
 │   └── src/  (api · store[Zustand] · hooks[useOrderStatusWS] · pages · components · types)
 │
 └── frontend-admin/              # Panel de administración — React + Vite — http://localhost:5174
-    └── src/  (api · context · hooks[useOrderStatusWS] · pages · components · routes · types)
+    └── src/  (Feature-Sliced Design)
+        ├── features/   auth · dashboard · productos · categorias · ingredientes · pedidos
+        ├── shared/     api · components · hooks · types · utils
+        ├── context/    AuthContext
+        └── routes/     PrivateRoute
 ```
 
 ### Arquitectura (regla de oro del backend)

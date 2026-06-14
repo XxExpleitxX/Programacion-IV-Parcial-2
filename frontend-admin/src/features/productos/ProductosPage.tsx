@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { productosApi, categoriasApi, unidadesApi, ingredientesApi, uploadsApi } from '../api'
-import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida, Ingrediente } from '../types'
-import Modal from '../components/Modal'
-import { useAuth } from '../context/AuthContext'
-import { toggleCategoriaConCascada } from '../utils/categorias'
+import { productosApi, categoriasApi, unidadesApi, ingredientesApi, uploadsApi } from '../../shared/api'
+import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida, Ingrediente } from '../../shared/types'
+import Modal from '../../shared/components/Modal'
+import { useAuth } from '../../context/AuthContext'
+import { toggleCategoriaConCascada } from '../../shared/utils/categorias'
 
 // ── Tipos internos ────────────────────────────────────────────────────────
 

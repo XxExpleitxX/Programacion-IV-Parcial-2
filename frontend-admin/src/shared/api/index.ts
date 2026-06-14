@@ -108,3 +108,25 @@ export const pedidosApi = {
   }) =>
     axiosInstance.post<Pedido>('/pedidos/', data).then(r => r.data),
 }
+// ─── Estadísticas ─────────────────────────────────────────
+import type {
+  ResumenKPI, VentasPeriodoItem, ProductoTopItem,
+  PedidosEstadoItem, IngresosResponse,
+} from '../types'
+
+export const estadisticasApi = {
+  resumen: () =>
+    axiosInstance.get<ResumenKPI>('/estadisticas/resumen').then(r => r.data),
+
+  ventas: (params?: { desde?: string; hasta?: string; agrupacion?: 'day' | 'week' | 'month' }) =>
+    axiosInstance.get<VentasPeriodoItem[]>('/estadisticas/ventas', { params }).then(r => r.data),
+
+  productosTop: (limit = 8) =>
+    axiosInstance.get<ProductoTopItem[]>('/estadisticas/productos-top', { params: { limit } }).then(r => r.data),
+
+  pedidosPorEstado: () =>
+    axiosInstance.get<PedidosEstadoItem[]>('/estadisticas/pedidos-por-estado').then(r => r.data),
+
+  ingresos: (params?: { desde?: string; hasta?: string }) =>
+    axiosInstance.get<IngresosResponse>('/estadisticas/ingresos', { params }).then(r => r.data),
+}

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ingredientesApi, unidadesApi } from '../api'
-import type { Ingrediente, IngredienteCreate, IngredienteUpdate, UnidadMedida } from '../types'
-import Modal from '../components/Modal'
+import { ingredientesApi, unidadesApi } from '../../shared/api'
+import type { Ingrediente, IngredienteCreate, IngredienteUpdate, UnidadMedida } from '../../shared/types'
+import Modal from '../../shared/components/Modal'
 
 interface FormProps {
   initial?: Ingrediente

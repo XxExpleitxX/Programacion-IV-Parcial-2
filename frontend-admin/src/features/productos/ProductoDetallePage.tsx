@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { productosApi } from '../api'
-import { useAuth } from '../context/AuthContext'
+import { productosApi } from '../../shared/api'
+import { useAuth } from '../../context/AuthContext'
 
 export default function ProductoDetallePage() {
   const { id } = useParams<{ id: string }>()

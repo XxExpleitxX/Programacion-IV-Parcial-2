@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { categoriasApi } from '../api'
-import type { Categoria, CategoriaCreate, CategoriaUpdate } from '../types'
-import Modal from '../components/Modal'
+import { categoriasApi } from '../../shared/api'
+import type { Categoria, CategoriaCreate, CategoriaUpdate } from '../../shared/types'
+import Modal from '../../shared/components/Modal'
 
 // ── Árbol de categorías ────────────────────────────────────────────────────
 
