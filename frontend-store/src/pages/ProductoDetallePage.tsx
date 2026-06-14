@@ -32,8 +32,12 @@ export default function ProductoDetallePage() {
       </button>
 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        <div className="h-48 bg-gradient-to-br from-orange-900/30 to-gray-800 flex items-center justify-center">
-          <span className="text-8xl">🍽️</span>
+        <div className="h-48 bg-gradient-to-br from-orange-900/30 to-gray-800 flex items-center justify-center overflow-hidden">
+          {producto.imagenes_url && producto.imagenes_url.length > 0 ? (
+            <img src={producto.imagenes_url[0]} alt={producto.nombre} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-8xl">🍽️</span>
+          )}
         </div>
 
         <div className="p-6">

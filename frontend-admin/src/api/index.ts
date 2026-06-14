@@ -8,8 +8,22 @@ import type {
   Categoria, CategoriaCreate, CategoriaUpdate,
   Ingrediente, IngredienteCreate, IngredienteUpdate,
   Producto, ProductoCreate, ProductoUpdate,
-  UnidadMedida, Pedido,
+  UnidadMedida, Pedido, CloudinaryResponse,
 } from '../types'
+
+// ─── Uploads (Cloudinary) ─────────────────────────────────
+export const uploadsApi = {
+  // Sube una imagen vía multipart/form-data. No fijamos Content-Type a mano:
+  // dejamos que el navegador ponga el boundary del multipart.
+  subir: (file: File, folder = 'productos') => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('folder', folder)
+    return axiosInstance
+      .post<CloudinaryResponse>('/uploads/imagen', form, { headers: { 'Content-Type': undefined } as any })
+      .then(r => r.data)
+  },
+}
 
 // ─── UnidadMedida ─────────────────────────────────────────
 export const unidadesApi = {

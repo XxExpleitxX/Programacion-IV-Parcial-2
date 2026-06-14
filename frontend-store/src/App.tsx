@@ -8,6 +8,7 @@ import CarritoPage from './pages/CarritoPage'
 import CheckoutPage from './pages/CheckoutPage'
 import MisPedidosPage from './pages/MisPedidosPage'
 import LoginPage from './pages/LoginPage'
+import Toasts from './components/Toasts'
 
 function Header() {
   const navigate = useNavigate()
@@ -104,6 +105,7 @@ export default function App() {
         <Route path="/pedidos/:id" element={<MisPedidosPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
+      <Toasts />
     </div>
   )
 }

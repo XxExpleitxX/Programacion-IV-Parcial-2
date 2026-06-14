@@ -24,7 +24,7 @@ export interface Producto {
   stock_cantidad: number
   es_manufacturado: boolean
   categorias: Categoria[]
-  imagen_url?: string | null
+  imagenes_url?: string[]
 }
 
 // ─── Carrito ──────────────────────────────────────────────

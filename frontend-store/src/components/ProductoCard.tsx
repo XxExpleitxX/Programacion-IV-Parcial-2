@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import type { Producto } from '../types/index'
 import { useCarrito } from '../store/carritoStore'
+import { useUI } from '../store/uiStore'
 
 interface Props {
   producto: Producto
@@ -9,15 +10,21 @@ interface Props {
 export default function ProductoCard({ producto }: Props) {
   const navigate = useNavigate()
   const agregar = useCarrito(s => s.agregar)
+  const addToast = useUI(s => s.addToast)
+
+  const handleAgregar = () => {
+    agregar(producto)
+    addToast(`${producto.nombre} agregado al carrito`, 'success')
+  }
 
   return (
     <div className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
       
       {/* === IMAGEN === */}
       <div className="relative h-40 bg-gray-800 overflow-hidden">
-        {producto.imagen_url ? (
+        {producto.imagenes_url && producto.imagenes_url.length > 0 ? (
           <img
-            src={producto.imagen_url}
+            src={producto.imagenes_url[0]}
             alt={producto.nombre}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -84,7 +91,7 @@ export default function ProductoCard({ producto }: Props) {
             
             {/* Botón Agregar */}
             <button
-              onClick={() => agregar(producto)}
+              onClick={handleAgregar}
               disabled={!producto.disponible}
               className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 active:scale-95 flex items-center gap-1"
             >

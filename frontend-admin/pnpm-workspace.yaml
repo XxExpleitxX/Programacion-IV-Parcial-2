@@ -1,0 +1,4 @@
+# Permite que pnpm ejecute el build script de esbuild (lo necesita Vite).
+# En pnpm 11 esta config vive acá (ya no en el campo "pnpm" de package.json).
+allowBuilds:
+  esbuild: true

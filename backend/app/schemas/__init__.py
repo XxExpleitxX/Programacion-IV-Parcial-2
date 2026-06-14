@@ -94,6 +94,7 @@ class ProductoCreate(BaseModel):
     categoria_ids: List[int] = []
     es_manufacturado: bool = False
     ingrediente_ids: List[int] = []
+    imagenes_url: List[str] = []          # URLs de Cloudinary
 
     @field_validator("nombre")
     @classmethod
@@ -120,6 +121,7 @@ class ProductoUpdate(BaseModel):
     categoria_ids: Optional[List[int]] = None
     es_manufacturado: Optional[bool] = None
     ingrediente_ids: Optional[List[int]] = None
+    imagenes_url: Optional[List[str]] = None
 
 
 class ProductoRead(BaseModel):
@@ -132,6 +134,7 @@ class ProductoRead(BaseModel):
     unidad_venta_id: Optional[int] = None
     categorias: List[CategoriaRead] = []
     es_manufacturado: bool = False
+    imagenes_url: List[str] = []
 
     model_config = {"from_attributes": True}
 

@@ -68,6 +68,7 @@ export interface Producto {
   unidad_venta_id: number | null;
   es_manufacturado: boolean;
   categorias: Categoria[];
+  imagenes_url: string[];
 }
 
 export interface ProductoCreate {
@@ -80,6 +81,7 @@ export interface ProductoCreate {
   categoria_ids: number[];
   es_manufacturado?: boolean;
   ingrediente_ids?: number[];
+  imagenes_url?: string[];
 }
 
 export interface ProductoUpdate {
@@ -91,6 +93,17 @@ export interface ProductoUpdate {
   unidad_venta_id?: number | null;
   categoria_ids?: number[];
   es_manufacturado?: boolean;
+  imagenes_url?: string[];
+}
+
+// ─── Cloudinary ──────────────────────────────────────────
+export interface CloudinaryResponse {
+  secure_url: string;
+  public_id: string;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
 }
 
 export interface DetallePedido {

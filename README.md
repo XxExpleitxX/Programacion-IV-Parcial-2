@@ -82,7 +82,7 @@ Router → Service → Unit of Work → Repository → Model
 ## ⚙️ Requisitos previos
 
 - **Python 3.11+**
-- **Node.js 18+** y **npm**
+- **Node.js 18+** y **pnpm** (`npm install -g pnpm` o `corepack enable`)
 - **XAMPP** con **MySQL** corriendo en el puerto `3306`
 
 ---
@@ -137,15 +137,15 @@ uvicorn app.main:app --reload --port 8000
 **Tienda (cliente):**
 ```bash
 cd frontend-store
-npm install
-npm run dev          # http://localhost:5173
+pnpm install
+pnpm dev             # http://localhost:5173
 ```
 
 **Panel de administración:**
 ```bash
 cd frontend-admin
-npm install
-npm run dev          # http://localhost:5174
+pnpm install
+pnpm dev             # http://localhost:5174
 ```
 
 > Ambos frontends apuntan a `http://localhost:8000` (definido en `src/api/axiosInstance.ts`). El CORS del backend ya permite los puertos `5173` y `5174`.

@@ -14,7 +14,7 @@ export default function HomePage() {
   const [precioMax, setPrecioMax] = useState<number | null>(null)
 
   // Query de productos
-  const { data: productos = [], isLoading, isFetching } = useQuery({
+  const { data: productos = [], isLoading } = useQuery({
     queryKey: ['store-productos', search, categoriaId, precioMax],
     queryFn: () => productosApi.getAll({
       nombre: search || undefined,

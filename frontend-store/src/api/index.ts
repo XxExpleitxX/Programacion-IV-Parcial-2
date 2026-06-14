@@ -64,3 +64,28 @@ export const pedidosApi = {
       motivo,
     }).then(r => r.data),
 }
+
+// ─── Pagos (MercadoPago) ──────────────────────────────────
+export interface PagoResponse {
+  id: number
+  pedido_id: number
+  mp_payment_id: number | null
+  mp_status: string
+  mp_status_detail: string | null
+  external_reference: string
+  transaction_amount: number
+  payment_method_id: string | null
+  created_at: string
+}
+
+export const pagosApi = {
+  // Recibe el token de tarjeta generado por el brick CardPayment de MP.
+  crear: (data: {
+    pedido_id: number
+    token: string
+    payment_method_id: string
+    installments: number
+    payer_email: string
+    issuer_id?: string
+  }) => axiosInstance.post<PagoResponse>('/pagos/crear', data).then(r => r.data),
+}

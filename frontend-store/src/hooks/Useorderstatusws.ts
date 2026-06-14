@@ -5,9 +5,13 @@
  * - Con pedidoId  → se suscribe al canal de ESE pedido (cliente).
  * - Sin pedidoId  → feed "admin" de todos los pedidos (ADMIN/PEDIDOS).
  * - Reconexión exponencial (1s, 2s, 4s... tope 30s, hasta 10 intentos).
- * - Expone `connected` para mostrar el badge "Sin conexión en tiempo real".
+ * - El estado de conexión y el último evento viven en wsStore (Zustand).
+ * - Cada evento dispara un toast (uiStore).
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { useAuth } from '../store/authStore'
+import { useWS } from '../store/wsStore'
+import { useUI } from '../store/uiStore'
 
 const WS_BASE = 'ws://localhost:8000/api/v1/pedidos/ws'
 const MAX_INTENTOS = 10
@@ -17,14 +21,13 @@ interface Options {
   onEvent?: (msg: { event: string; data: Record<string, unknown> }) => void
   enabled?: boolean
 }
-import { useAuth } from '../store/authStore'
 
 function getToken(): string | null {
   return useAuth.getState().user?.token ?? null
 }
 
 export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options = {}) {
-  const [connected, setConnected] = useState(false)
+  const connected = useWS((s) => s.connected)
   const onEventRef = useRef(onEvent)
   onEventRef.current = onEvent
 
@@ -32,6 +35,9 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
     if (!enabled) return
     const token = getToken()
     if (!token) return
+
+    const { setConnected, pushEvent } = useWS.getState()
+    const { addToast } = useUI.getState()
 
     let ws: WebSocket | null = null
     let timer: ReturnType<typeof setTimeout>
@@ -50,7 +56,13 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
       ws.onopen = () => { intentos = 0; setConnected(true) }
 
       ws.onmessage = (e) => {
-        try { onEventRef.current?.(JSON.parse(e.data)) } catch { /* ignore */ }
+        try {
+          const msg = JSON.parse(e.data)
+          pushEvent(msg)
+          const estado = msg?.data?.estado_nuevo
+          if (estado) addToast(`Pedido actualizado: ${estado}`, 'info')
+          onEventRef.current?.(msg)
+        } catch { /* ignore */ }
       }
 
       ws.onclose = () => {

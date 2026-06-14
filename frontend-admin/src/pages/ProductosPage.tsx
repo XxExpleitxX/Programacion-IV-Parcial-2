@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { productosApi, categoriasApi, unidadesApi, ingredientesApi } from '../api'
+import { productosApi, categoriasApi, unidadesApi, ingredientesApi, uploadsApi } from '../api'
 import type { Producto, ProductoCreate, ProductoUpdate, Categoria, UnidadMedida, Ingrediente } from '../types'
 import Modal from '../components/Modal'
 import { useAuth } from '../context/AuthContext'
@@ -34,7 +34,28 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
   const [unidadVentaId, setUnidadVentaId] = useState<number | null>(initial?.unidad_venta_id ?? null)
   const [esManufacturado, setEsManufacturado] = useState(initial?.es_manufacturado ?? false)
   const [categoriaIds, setCategoriaIds] = useState<number[]>(initial?.categorias.map(c => c.id) ?? [])
+  const [imagenesUrl, setImagenesUrl] = useState<string[]>(initial?.imagenes_url ?? [])
+  const [subiendo, setSubiendo] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [validacionError, setValidacionError] = useState<string | null>(null)
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setSubiendo(true)
+    try {
+      const { secure_url } = await uploadsApi.subir(file, 'productos')
+      setImagenesUrl(prev => [...prev, secure_url])
+    } catch (err: any) {
+      setUploadError(err.response?.data?.detail ?? 'Error al subir la imagen')
+    } finally {
+      setSubiendo(false)
+      e.target.value = ''   // permite volver a subir el mismo archivo
+    }
+  }
+
+  const quitarImagen = (url: string) => setImagenesUrl(prev => prev.filter(u => u !== url))
  
   // Calculadora integrada
   const [costoOperativo, setCostoOperativo] = useState('0')
@@ -101,6 +122,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       es_manufacturado: esManufacturado,
       categoria_ids: categoriaIds,
       ingrediente_ids: esManufacturado ? ingredientesSeleccionados.map(i => i.ingrediente.id) : [],
+      imagenes_url: imagenesUrl,
     })
   }
  
@@ -280,6 +302,33 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
         </>
       )}
  
+      {/* Imágenes (Cloudinary) */}
+      <div>
+        <label className="block text-xs font-medium text-slate-400 mb-2">Imágenes (Cloudinary)</label>
+        {imagenesUrl.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {imagenesUrl.map(url => (
+              <div key={url} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => quitarImagen(url)}
+                  className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-5 h-5 text-xs leading-none flex items-center justify-center">
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFile}
+          disabled={subiendo}
+          className="text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-600 file:text-white file:cursor-pointer hover:file:bg-brand-500"
+        />
+        {subiendo && <p className="text-slate-400 text-xs mt-1">Subiendo a Cloudinary…</p>}
+        {uploadError && <p className="text-red-400 text-xs mt-1">{uploadError}</p>}
+      </div>
+
       {/* Categorías */}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Categorías</label>
@@ -302,73 +351,6 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
         </button>
       </div>
     </form>
-  )
-}
-
-// ── Calculadora de precio ─────────────────────────────────────────────────
-
-interface CalculadoraProps {
-  productoId: number
-  onClose: () => void
-}
-
-function CalculadoraPrecio({ productoId, onClose }: CalculadoraProps) {
-  const [margen, setMargen] = useState(30)
-  const [resultado, setResultado] = useState<{ costo_total: number; precio_sugerido: number; margen_porcentaje: number } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const calcular = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await productosApi.calcularPrecio(productoId, margen)
-      setResultado(data)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      <p className="text-slate-400 text-sm">Calculá el precio sugerido de venta basado en el costo de ingredientes.</p>
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1">Margen de ganancia (%)</label>
-        <div className="flex gap-3 items-center">
-          <input type="range" min="0" max="200" value={margen}
-            onChange={e => setMargen(Number(e.target.value))} className="flex-1" />
-          <input type="number" min="0" max="1000" value={margen}
-            onChange={e => setMargen(Number(e.target.value))}
-            className="input-field w-24 text-center" />
-          <span className="text-slate-400">%</span>
-        </div>
-      </div>
-      <button onClick={calcular} disabled={loading} className="btn-primary w-full">
-        {loading ? 'Calculando...' : 'Calcular precio'}
-      </button>
-      {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
-      {resultado && (
-        <div className="bg-surface border border-border rounded-lg p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Costo de ingredientes:</span>
-            <span className="text-slate-200">${resultado.costo_total.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Margen aplicado:</span>
-            <span className="text-slate-200">{resultado.margen_porcentaje}%</span>
-          </div>
-          <div className="flex justify-between text-base font-bold border-t border-border pt-2">
-            <span className="text-slate-300">Precio sugerido:</span>
-            <span className="text-brand-400 text-lg">${resultado.precio_sugerido.toFixed(2)}</span>
-          </div>
-        </div>
-      )}
-      <div className="flex justify-end">
-        <button onClick={onClose} className="btn-secondary">Cerrar</button>
-      </div>
-    </div>
   )
 }
 

@@ -29,6 +29,7 @@ def _build_read(producto: Producto) -> ProductoRead:
         unidad_venta_id=producto.unidad_venta_id,
         es_manufacturado=producto.es_manufacturado,
         categorias=categorias,
+        imagenes_url=producto.imagenes_url or [],
     )
 
 
@@ -112,6 +113,7 @@ def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
         stock_cantidad=data.stock_cantidad,
         unidad_venta_id=data.unidad_venta_id,
         es_manufacturado=data.es_manufacturado,
+        imagenes_url=data.imagenes_url,
     )
     uow.productos.add(producto)
     uow.flush()
@@ -136,7 +138,8 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoUpdate) -> ProductoR
         raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")
 
     for field in ["nombre", "descripcion", "precio_base", "disponible",
-                  "stock_cantidad", "unidad_venta_id", "es_manufacturado"]:
+                  "stock_cantidad", "unidad_venta_id", "es_manufacturado",
+                  "imagenes_url"]:
         val = getattr(data, field, None)
         if val is not None:
             setattr(producto, field, val)
