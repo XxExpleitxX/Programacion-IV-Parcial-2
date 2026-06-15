@@ -158,11 +158,12 @@ pnpm dev             # http://localhost:5174
 
 > Ambos frontends apuntan a `http://localhost:8000` (definido en `src/api/axiosInstance.ts`). El CORS del backend ya permite los puertos `5173` y `5174`.
 
-### 4. Credenciales del administrador (seed)
+### 4. Credenciales (seed)
 
 | Email | Contraseña | Rol |
 |-------|-----------|-----|
 | `admin@foodstore.com` | `Admin1234!` | `ADMIN` |
+| `cliente@foodstore.com` | `Cliente1234!` | `CLIENT` |
 
 ---
 

@@ -11,7 +11,7 @@ import { useAuth } from '../../store/authStore'
 const BASE_URL = 'http://localhost:8000'
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${BASE_URL}/api/v1`,   // todas las rutas cuelgan de /api/v1
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 })

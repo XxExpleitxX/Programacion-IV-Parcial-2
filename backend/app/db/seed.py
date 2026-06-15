@@ -10,6 +10,7 @@ Carga, en orden:
     3. FormaPago        → MERCADOPAGO, EFECTIVO, TRANSFERENCIA
     4. UnidadMedida     → kg, g, L, ml, ud, porciones
     5. Usuario admin    → admin@foodstore.com (username == email) / Admin1234!  (rol ADMIN)
+    6. Usuario cliente  → cliente@foodstore.com / Cliente1234!  (rol CLIENT)
 
 El commit es automático: lo hace el Unit of Work al cerrar el bloque `with`
 (si no hubo error). No hay commits manuales.
@@ -63,7 +64,16 @@ ADMIN = {
     "nombre":   "Admin",
     "apellido": "Sistema",
     "email":    "admin@foodstore.com",
-    "password": "Admin1234!",            
+    "password": "Admin1234!",
+}
+
+# ── 6. Usuario cliente de prueba (rol CLIENT) ─────────────────────────────────
+CLIENTE = {
+    "username": "cliente@foodstore.com",
+    "nombre":   "Cliente",
+    "apellido": "Demo",
+    "email":    "cliente@foodstore.com",
+    "password": "Cliente1234!",
 }
 
 
@@ -122,6 +132,24 @@ def seed():
             print(f"  ✅ {ADMIN['email']} / {ADMIN['password']}")
         else:
             print("  ⏭️  el admin ya existe")
+
+        print("── 6. Usuario cliente ──")
+        cliente_existe = uow.usuarios.get_by_username(CLIENTE["username"])
+
+        if not cliente_existe:
+            cliente = Usuario(
+                username=CLIENTE["username"],
+                nombre=CLIENTE["nombre"],
+                apellido=CLIENTE["apellido"],
+                email=CLIENTE["email"],
+                hashed_password=hash_password(CLIENTE["password"]),
+            )
+            uow.usuarios.add(cliente)
+            uow.flush()                       # genera cliente.id (sin commitear)
+            uow.usuarios.assign_role(cliente.id, "CLIENT")
+            print(f"  ✅ {CLIENTE['email']} / {CLIENTE['password']}")
+        else:
+            print("  ⏭️  el cliente ya existe")
 
     # Al salir del `with`, el UoW comitea todo automáticamente.
     print("\n✅ Seed completo.")
