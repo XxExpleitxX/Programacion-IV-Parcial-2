@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 
 from app.core.deps import require_role
-from app.models.usuarios.usuario import Usuario
+from app.modules.auth.usuario import Usuario
 from app.schemas.uploads_schema import CloudinaryResponse
 from app.modules.uploads.service import subir_imagen, eliminar_imagen
 

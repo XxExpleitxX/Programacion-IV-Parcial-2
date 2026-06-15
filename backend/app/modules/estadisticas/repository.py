@@ -18,9 +18,9 @@ from typing import Optional
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from app.models.pedido import Pedido
-from app.models.detalle_pedido import DetallePedido
-from app.models.pago import Pago
+from app.modules.pedidos.pedido import Pedido
+from app.modules.pedidos.detalle_pedido import DetallePedido
+from app.modules.pagos.pago import Pago
 
 ESTADOS_ACTIVOS = ("PENDIENTE", "CONFIRMADO", "EN_PREP")
 

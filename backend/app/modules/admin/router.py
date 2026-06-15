@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel
 
 from app.core.deps import require_role
-from app.models.usuarios.usuario import Usuario, UsuarioPublic
+from app.modules.auth.usuario import Usuario, UsuarioPublic
 from app.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/admin", tags=["Admin"])

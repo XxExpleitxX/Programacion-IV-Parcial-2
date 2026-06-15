@@ -9,7 +9,7 @@ El service lo usa como: uow.historial.append(registro)
 from typing import List
 from sqlmodel import Session, select
 
-from app.models.historial_estado_pedido import HistorialEstadoPedido
+from app.modules.pedidos.historial_estado_pedido import HistorialEstadoPedido
 from app.repositories.base_repository import BaseRepository
 
 

@@ -4,7 +4,7 @@ PagoRepository — acceso a la tabla pagos.
 from typing import Optional, List
 from sqlmodel import Session, select
 
-from app.models.pago import Pago
+from app.modules.pagos.pago import Pago
 from app.repositories.base_repository import BaseRepository
 
 

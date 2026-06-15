@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.core.security import require_authenticated
 from app.core.config import settings
-from app.models.usuarios.usuario import Usuario
+from app.modules.auth.usuario import Usuario
 from app.schemas.pago_schema import (
     PedidoCreate, PedidoRead, AvanzarEstadoRequest, HistorialRead
 )

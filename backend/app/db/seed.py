@@ -17,9 +17,9 @@ Es idempotente: si un registro ya existe, lo saltea.
 """
 
 from app.core.security import hash_password
-from app.models.usuarios.usuario import Rol, Usuario
-from app.models.catalogs import FormaPago, EstadoPedido
-from app.models.unidad_medida import UnidadMedida
+from app.modules.auth.usuario import Rol, Usuario
+from app.modules.pedidos.catalogs import FormaPago, EstadoPedido
+from app.modules.unidades.unidad_medida import UnidadMedida
 from app.unit_of_work import UnitOfWork
 
 

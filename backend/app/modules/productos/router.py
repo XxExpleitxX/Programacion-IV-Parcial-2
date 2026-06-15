@@ -6,7 +6,7 @@ from app.core.security import require_admin, require_admin_or_editor, require_au
 from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead
 from app.schemas.pagination import Paginated
 from app.modules.productos import service as producto_service
-from app.models import Usuario
+from app.modules.auth.usuario import Usuario
 from app.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/productos", tags=["Productos"])

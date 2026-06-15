@@ -23,7 +23,7 @@ from app.repositories.catalogo_repository import FormaPagoRepository, EstadoPedi
 from app.modules.pagos.repository import PagoRepository
 from app.modules.estadisticas.repository import EstadisticasRepository
 from app.modules.direcciones.repository import DireccionRepository
-from app.models.usuarios.usuario_repository import UsuarioRepository, RolRepository
+from app.modules.auth.usuario_repository import UsuarioRepository, RolRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.core.websocket import manager
 

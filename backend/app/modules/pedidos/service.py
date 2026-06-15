@@ -23,9 +23,9 @@ from typing import List, Optional
 
 from fastapi import HTTPException, status
 
-from app.models.pedido import Pedido
-from app.models.detalle_pedido import DetallePedido
-from app.models.historial_estado_pedido import HistorialEstadoPedido
+from app.modules.pedidos.pedido import Pedido
+from app.modules.pedidos.detalle_pedido import DetallePedido
+from app.modules.pedidos.historial_estado_pedido import HistorialEstadoPedido
 from app.schemas.pago_schema import PedidoCreate, AvanzarEstadoRequest
 from app.schemas.pagination import paginate
 from app.unit_of_work import UnitOfWork

@@ -7,7 +7,7 @@ Regla UoW:
 
 from typing import List, Optional
 from fastapi import HTTPException, status
-from app.models import Ingrediente
+from app.modules.ingredientes.ingrediente import Ingrediente
 from app.schemas import IngredienteCreate, IngredienteUpdate
 from app.unit_of_work import UnitOfWork
 

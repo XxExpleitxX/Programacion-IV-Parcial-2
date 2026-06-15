@@ -5,7 +5,7 @@ Repositorio de Usuario — acceso a datos, sin lógica de negocio.
 from typing import Optional, List
 from sqlmodel import Session, select
 from app.repositories.base_repository import BaseRepository
-from app.models.usuarios.usuario import Usuario, UsuarioRol, Rol
+from app.modules.auth.usuario import Usuario, UsuarioRol, Rol
 
 
 class UsuarioRepository(BaseRepository[Usuario]):

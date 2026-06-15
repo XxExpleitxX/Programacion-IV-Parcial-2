@@ -2,7 +2,8 @@ from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
 from fastapi import HTTPException
-from app.models import Producto, ProductoCategoria
+from app.modules.productos.producto import Producto
+from app.modules.productos.producto_categoria import ProductoCategoria
 from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead, CategoriaRead
 from app.schemas.pagination import paginate
 from app.modules.uploads.service import borrar_por_url

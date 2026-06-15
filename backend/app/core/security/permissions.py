@@ -5,7 +5,7 @@ Actualizado para usar user.roles (lista) en lugar de user.rol (string).
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 
-from app.models import Usuario
+from app.modules.auth.usuario import Usuario
 from app.core.security.oauth2_scheme import oauth2_scheme
 from app.core.security.jwt_handler import decode_token
 from app.unit_of_work import UnitOfWork, get_uow

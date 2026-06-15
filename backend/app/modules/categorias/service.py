@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from fastapi import HTTPException, status
-from app.models import Categoria
+from app.modules.categorias.categoria import Categoria
 from app.schemas import CategoriaCreate, CategoriaUpdate, CategoriaConHijosRead, CategoriaRead
 from app.unit_of_work import UnitOfWork
 

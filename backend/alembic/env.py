@@ -12,7 +12,7 @@ from alembic import context
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel
 
-import app.models  # noqa: F401  → puebla SQLModel.metadata con TODAS las tablas
+import app.modules  # noqa: F401  → puebla SQLModel.metadata con TODAS las tablas
 from app.core.database import DATABASE_URL
 
 config = context.config

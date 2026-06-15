@@ -1,9 +1,9 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends
 from app.unit_of_work import UnitOfWork, get_uow
-from app.models.unidad_medida import UnidadMedida
+from app.modules.unidades.unidad_medida import UnidadMedida
 from app.core.security import require_authenticated
-from app.models import Usuario
+from app.modules.auth.usuario import Usuario
 
 router = APIRouter(prefix="/unidades-medida", tags=["Unidades de Medida"])
 

@@ -14,10 +14,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.core.deps import get_current_active_user, require_role
 from app.core.config import settings
 from app.core.rate_limit import login_limiter
-from app.models.usuarios.usuario import (
+from app.modules.auth.usuario import (
     Usuario, UsuarioCreate, UsuarioPublic, Token, LoginRequest, RefreshRequest,
 )
-from app.models.usuarios.usuario_service import (
+from app.modules.auth.usuario_service import (
     registrar_usuario,
     autenticar_usuario,
     refrescar_token,

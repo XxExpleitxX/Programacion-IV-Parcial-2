@@ -17,8 +17,6 @@ Aplicación **full-stack** para la gestión integral de un negocio de comidas: c
 
 ## 🎥 Video de demostración (10–15 min)
 
-> Demuestra WebSocket y Cloudinary en vivo.
-
 🔗 https://youtu.be/OqynLC-KjSQ
 
 ---
@@ -49,22 +47,23 @@ proyecto_parcial/
 │   └── app/  (Feature-First — módulos por dominio)
 │       ├── main.py              # app + CORS + handler RFC 7807 + montaje bajo /api/v1
 │       ├── unit_of_work.py      # UoW: commit/rollback automático + eventos WS post-commit
-│       ├── modules/             # un paquete por feature, cada uno con router/service/repository:
+│       ├── modules/             # un paquete por feature: router + service + repository + MODEL(s)
 │       │                        #   auth · categorias · ingredientes · productos · pedidos ·
 │       │                        #   pagos · uploads · estadisticas · direcciones · unidades · admin · ws
+│       │                        # (modules/__init__.py registra todos los modelos en SQLModel.metadata)
 │       ├── core/                # config, database, deps, websocket, mercado_pago_cliente, rate_limit, security/
-│       ├── models/              # SQLModel compartidos (usuarios/, producto, pedido, pago, ...)
-│       ├── repositories/        # BaseRepository[T] genérico + repos de infra (usuario, catálogo, refresh)
+│       ├── repositories/        # solo infra compartida: BaseRepository[T] genérico + repos de catálogo/auth
 │       ├── schemas/             # Pydantic v2 (Create / Update / Read + pagination)
+│       ├── alembic/             # migraciones (env.py + versions/) — alembic upgrade head
 │       └── db/seed.py           # seed obligatorio (roles, estados, formas de pago, unidades, admin)
 │
-├── frontend-store/              # Tienda (cliente) — React + Vite — http://localhost:5173
+├── frontend-store/              # Tienda (cliente) — React + Vite
 │   └── src/  (Feature-Sliced Design)
 │       ├── features/   auth · catalogo · carrito · checkout · pedidos
 │       ├── shared/     api · components · hooks · types · utils
 │       └── store/      authStore · carritoStore · wsStore · uiStore · pagoStore
 │
-└── frontend-admin/              # Panel de administración — React + Vite — http://localhost:5174
+└── frontend-admin/              # Panel de administración — React + Vite
     └── src/  (Feature-Sliced Design)
         ├── features/   auth · dashboard · productos · categorias · ingredientes · pedidos · stock
         ├── shared/     api · components · hooks · types · utils
@@ -90,7 +89,7 @@ Router → Service → Unit of Work → Repository → Model
 
 - **Python 3.11+**
 - **Node.js 18+** y **pnpm** (`npm install -g pnpm` o `corepack enable`)
-- **XAMPP** con **MySQL** corriendo en el puerto `3306`
+- **XAMPP** y **DOCKER** con **MySQL** corriendo en el puerto `3306`
 
 ---
 
@@ -124,8 +123,7 @@ pip install -r requirements.txt
 copy .env.example .env
 # Mac/Linux:
 cp .env.example .env
-#   → editar .env: DB_PASSWORD si tu MySQL tiene clave, y las credenciales
-#     de MercadoPago y Cloudinary si vas a probar pagos / subida de imágenes.
+
 
 # (Opcional) Migraciones con Alembic — el esquema también se crea solo al iniciar la app
 alembic upgrade head

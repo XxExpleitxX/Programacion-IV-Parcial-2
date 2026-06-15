@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional
 from sqlmodel import Session, select
 
-from app.models.usuarios.usuario import RefreshToken
+from app.modules.auth.usuario import RefreshToken
 from app.repositories.base_repository import BaseRepository
 
 

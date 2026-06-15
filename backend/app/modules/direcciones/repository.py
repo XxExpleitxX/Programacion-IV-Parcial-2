@@ -8,7 +8,7 @@ Para que el router de direcciones NO use uow.session directamente
 from typing import List, Optional
 from sqlmodel import Session, select
 
-from app.models.direccion_entrega import DireccionEntrega
+from app.modules.direcciones.direccion_entrega import DireccionEntrega
 from app.repositories.base_repository import BaseRepository
 
 

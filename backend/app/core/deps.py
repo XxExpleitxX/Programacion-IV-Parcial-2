@@ -10,7 +10,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 
 from app.core.security import decode_access_token, get_token_from_request
-from app.models.usuarios.usuario import Usuario
+from app.modules.auth.usuario import Usuario
 from app.unit_of_work import UnitOfWork, get_uow
 
 

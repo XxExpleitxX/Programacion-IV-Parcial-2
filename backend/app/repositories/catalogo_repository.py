@@ -10,8 +10,8 @@ y get_by_id de BaseRepository funciona igual con PK string.
 
 from typing import List, Optional
 from sqlmodel import Session, select
-from app.models.catalogs import FormaPago, EstadoPedido
-from app.models.unidad_medida import UnidadMedida
+from app.modules.pedidos.catalogs import FormaPago, EstadoPedido
+from app.modules.unidades.unidad_medida import UnidadMedida
 from app.repositories.base_repository import BaseRepository
 
 

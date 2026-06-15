@@ -1,6 +1,6 @@
 """Tests del ciclo de vida de pedidos: FSM + historial append-only."""
 from sqlmodel import select
-from app.models.usuarios.usuario import Usuario
+from app.modules.auth.usuario import Usuario
 
 
 def _user_id(db_session, username: str) -> int:

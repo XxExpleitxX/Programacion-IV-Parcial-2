@@ -1,6 +1,8 @@
 from typing import List, Optional
 from sqlmodel import Session, select
-from app.models import Categoria, ProductoCategoria, Producto
+from app.modules.categorias.categoria import Categoria
+from app.modules.productos.producto_categoria import ProductoCategoria
+from app.modules.productos.producto import Producto
 from app.repositories.base_repository import BaseRepository
 
 

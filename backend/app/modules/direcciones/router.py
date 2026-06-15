@@ -17,8 +17,8 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from app.core.security import require_authenticated
-from app.models.usuarios.usuario import Usuario
-from app.models.direccion_entrega import DireccionEntrega
+from app.modules.auth.usuario import Usuario
+from app.modules.direcciones.direccion_entrega import DireccionEntrega
 from app.schemas.pago_schema import DireccionCreate, DireccionRead
 from app.unit_of_work import UnitOfWork, get_uow
 

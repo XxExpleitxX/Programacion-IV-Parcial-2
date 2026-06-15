@@ -1,7 +1,9 @@
 from typing import List, Optional
 from decimal import Decimal
 from sqlmodel import Session, select, func
-from app.models import Producto, ProductoCategoria, ProductoIngrediente
+from app.modules.productos.producto import Producto
+from app.modules.productos.producto_categoria import ProductoCategoria
+from app.modules.productos.producto_ingrediente import ProductoIngrediente
 from app.repositories.base_repository import BaseRepository
 
 

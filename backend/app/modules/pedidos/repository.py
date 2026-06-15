@@ -8,8 +8,8 @@ Nota: el HistorialEstadoPedidoRepository se movió a su propio archivo
 from typing import Optional, List
 from sqlmodel import Session, select, func
 
-from app.models.pedido import Pedido
-from app.models.detalle_pedido import DetallePedido
+from app.modules.pedidos.pedido import Pedido
+from app.modules.pedidos.detalle_pedido import DetallePedido
 from app.repositories.base_repository import BaseRepository
 
 

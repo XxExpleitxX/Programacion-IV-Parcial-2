@@ -16,4 +16,5 @@ engine = create_engine(DATABASE_URL, echo=True)
 
 
 def create_db_and_tables():
+    import app.modules  # noqa: F401 → registra todas las tablas en SQLModel.metadata
     SQLModel.metadata.create_all(engine)

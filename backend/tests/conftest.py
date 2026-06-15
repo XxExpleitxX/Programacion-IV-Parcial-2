@@ -21,11 +21,11 @@ import app.core.database as db_mod
 import app.unit_of_work as uow_mod
 from app.main import app as fastapi_app
 from app.core.security import hash_password
-from app.models.usuarios.usuario import Usuario, UsuarioRol, Rol
-from app.models.catalogs import FormaPago, EstadoPedido
-from app.models.producto import Producto
-from app.models.pedido import Pedido
-from app.models.detalle_pedido import DetallePedido
+from app.modules.auth.usuario import Usuario, UsuarioRol, Rol
+from app.modules.pedidos.catalogs import FormaPago, EstadoPedido
+from app.modules.productos.producto import Producto
+from app.modules.pedidos.pedido import Pedido
+from app.modules.pedidos.detalle_pedido import DetallePedido
 
 
 # ── Engine SQLite (archivo temporal), parchea el engine real ──────────────────

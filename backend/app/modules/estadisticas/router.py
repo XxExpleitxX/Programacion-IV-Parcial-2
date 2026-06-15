@@ -14,7 +14,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import require_role
-from app.models.usuarios.usuario import Usuario
+from app.modules.auth.usuario import Usuario
 from app.schemas.estadisticas_schema import (
     ResumenResponse, VentasPeriodoItem, ProductoTopItem,
     PedidosEstadoItem, IngresosResponse,

@@ -16,8 +16,8 @@ import mercadopago
 from fastapi import HTTPException, status
 
 from app.core.mercado_pago_cliente import get_sdk
-from app.models.pago import Pago
-from app.models.historial_estado_pedido import HistorialEstadoPedido
+from app.modules.pagos.pago import Pago
+from app.modules.pedidos.historial_estado_pedido import HistorialEstadoPedido
 from app.schemas.pago_schema import CrearPagoRequest
 from app.unit_of_work import UnitOfWork
 

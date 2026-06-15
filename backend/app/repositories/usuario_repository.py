@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlmodel import Session, select
-from app.models import Usuario
-from app.models.usuarios.usuario import UsuarioRol, Rol
+from app.modules.auth.usuario import Usuario
+from app.modules.auth.usuario import UsuarioRol, Rol
 from app.repositories.base_repository import BaseRepository
  
  

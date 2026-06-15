@@ -12,7 +12,7 @@ from app.core.security import (
     create_access_token, create_refresh_token, decode_token,
 )
 from app.core.config import settings
-from app.models.usuarios.usuario import Usuario, UsuarioCreate, Token
+from app.modules.auth.usuario import Usuario, UsuarioCreate, Token
 from app.unit_of_work import UnitOfWork
 
 
