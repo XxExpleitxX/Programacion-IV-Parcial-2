@@ -18,6 +18,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { estadisticasApi } from '../../shared/api'
+import { labelEstado } from '../../shared/utils/estados'
 
 // ── Paleta de colores coherente con el resto del admin ────────────────────────
 const COLORS_ESTADO: Record<string, string> = {
@@ -112,7 +113,7 @@ export default function DashboardPage() {
   }))
 
   const estadoData = porEstado.map(e => ({
-    name:     e.estado_codigo,
+    name:     labelEstado(e.estado_codigo),
     value:    e.cantidad,
     color:    COLORS_ESTADO[e.estado_codigo] ?? '#888',
   }))

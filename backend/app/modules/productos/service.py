@@ -149,15 +149,9 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoUpdate) -> ProductoR
         if val is not None:
             setattr(producto, field, val)
 
-    # Revalidar si ahora es manufacturado y no tiene ingredientes
-    if producto.es_manufacturado and not producto.producto_ingredientes:
-        raise HTTPException(
-            status_code=422,
-            detail="Debe cargar un ingrediente para guardarlo"
-        )
-
     producto.updated_at = datetime.utcnow()
 
+    # Categorías: si vienen, reemplazan las actuales
     if data.categoria_ids is not None:
         uow.productos.clear_categorias(producto)
         uow.flush()
@@ -166,6 +160,23 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoUpdate) -> ProductoR
             if not uow.categorias.get_by_id(cat_id):
                 raise HTTPException(status_code=404, detail=f"Categoría {cat_id} no encontrada")
             uow.productos.add_categoria(producto_id, cat_id)
+
+    # Ingredientes: si vienen, reemplazan los actuales (igual que en create)
+    if data.ingrediente_ids is not None:
+        uow.productos.clear_ingredientes(producto)
+        uow.flush()
+        uow.refresh(producto)
+        for ing_id in data.ingrediente_ids:
+            uow.productos.add_ingrediente(producto_id, ing_id, 1.0)
+        uow.flush()
+        uow.refresh(producto)
+
+    # Validación manufacturado: contra el estado FINAL (ya con los ingredientes nuevos)
+    if producto.es_manufacturado and not producto.producto_ingredientes:
+        raise HTTPException(
+            status_code=422,
+            detail="Debe cargar un ingrediente para guardarlo"
+        )
 
     uow.productos.add(producto)
     uow.flush()

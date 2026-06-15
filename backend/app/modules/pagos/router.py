@@ -1,6 +1,8 @@
 """
 Router de pagos — MercadoPago.
-POST   /pagos/crear            → crea el pago con el token de tarjeta (CLIENT)
+POST   /pagos/crear            → crea el pago con el token de tarjeta — CardPayment (CLIENT)
+POST   /pagos/preferencia      → crea preferencia Checkout PRO, devuelve init_point (CLIENT)
+POST   /pagos/confirmar        → al volver de Checkout PRO, sincroniza el pago (CLIENT)
 POST   /pagos/webhook          → IPN de MercadoPago (público)
 GET    /pagos/{pedido_id}      → consulta el pago de un pedido (dueño/ADMIN)
 """
@@ -9,8 +11,13 @@ from fastapi import APIRouter, Depends, Request, status
 
 from app.core.deps import get_current_active_user
 from app.modules.auth.usuario import Usuario
-from app.schemas.pago_schema import CrearPagoRequest, PagoResponse
-from app.modules.pagos.service import crear_pago, procesar_webhook, get_pago_por_pedido
+from app.schemas.pago_schema import (
+    CrearPagoRequest, PagoResponse,
+    PreferenciaRequest, PreferenciaResponse, ConfirmarPagoRequest,
+)
+from app.modules.pagos.service import (
+    crear_pago, crear_preferencia, verificar_pago, procesar_webhook, get_pago_por_pedido,
+)
 from app.unit_of_work import UnitOfWork, get_uow
 
 router = APIRouter(prefix="/pagos", tags=["Pagos"])
@@ -24,6 +31,31 @@ def crear_pago_endpoint(body: CrearPagoRequest, uow: UoWDep, current_user: UserD
     # Si el pago se aprueba, el Service confirma el pedido y encola el evento WS;
     # get_uow lo emite DESPUÉS del commit (RN-06).
     return crear_pago(uow, current_user.id, body)
+
+
+@router.post("/preferencia", response_model=PreferenciaResponse, status_code=status.HTTP_201_CREATED)
+def crear_preferencia_endpoint(body: PreferenciaRequest, uow: UoWDep, current_user: UserDep):
+    """Checkout PRO: devuelve el init_point para redirigir al cliente a MercadoPago."""
+    return crear_preferencia(uow, current_user.id, body.pedido_id)
+
+
+@router.post("/confirmar")
+def confirmar_endpoint(body: ConfirmarPagoRequest, uow: UoWDep, current_user: UserDep):
+    """
+    Al volver de Checkout PRO, el front manda el payment_id (de la URL de retorno).
+    Re-consulta el pago en MP y, si está aprobado, confirma el pedido + notifica WS.
+    """
+    procesar_webhook(uow, body.payment_id)
+    return {"status": "ok"}
+
+
+@router.post("/verificar")
+def verificar_endpoint(body: PreferenciaRequest, uow: UoWDep, current_user: UserDep):
+    """
+    Verifica el estado del pago de un pedido buscándolo en MercadoPago por
+    external_reference (no depende del redirect). Confirma el pedido si está aprobado.
+    """
+    return verificar_pago(uow, current_user.id, body.pedido_id)
 
 
 @router.post("/webhook")

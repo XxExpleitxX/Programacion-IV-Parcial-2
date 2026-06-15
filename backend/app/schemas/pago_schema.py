@@ -143,3 +143,20 @@ class PagoResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ── Checkout PRO (preferencia + retorno) ────────────────────────────
+
+class PreferenciaRequest(BaseModel):
+    pedido_id: int
+
+
+class PreferenciaResponse(BaseModel):
+    preference_id: str
+    init_point:    str          # URL de la página de pago de MercadoPago
+    pedido_id:     int
+
+
+class ConfirmarPagoRequest(BaseModel):
+    """Al volver de Checkout PRO, el front manda el payment_id que MP puso en la URL."""
+    payment_id: str

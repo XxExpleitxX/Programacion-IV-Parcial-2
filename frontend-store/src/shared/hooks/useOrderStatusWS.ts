@@ -12,6 +12,7 @@ import { useEffect, useRef } from 'react'
 import { useAuth } from '../../store/authStore'
 import { useWS } from '../../store/wsStore'
 import { useUI } from '../../store/uiStore'
+import { labelEstado } from '../lib/estados'
 
 const WS_ROOT = 'ws://localhost:8000/api/v1/ws'
 const API_BASE = 'http://localhost:8000/api/v1'
@@ -81,7 +82,7 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
           const msg = JSON.parse(e.data)
           pushEvent(msg)
           const estado = msg?.data?.estado_nuevo
-          if (estado) addToast(`Pedido actualizado: ${estado}`, 'info')
+          if (estado) addToast(`Pedido actualizado: ${labelEstado(String(estado))}`, 'info')
           onEventRef.current?.(msg)
         } catch { /* ignore */ }
       }

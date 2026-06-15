@@ -93,4 +93,20 @@ export const pagosApi = {
     payer_email: string
     issuer_id?: string
   }) => axiosInstance.post<PagoResponse>('/pagos/crear', data).then(r => r.data),
+
+  // Checkout PRO: crea la preferencia y devuelve el init_point para redirigir.
+  crearPreferencia: (pedido_id: number) =>
+    axiosInstance
+      .post<{ preference_id: string; init_point: string; pedido_id: number }>('/pagos/preferencia', { pedido_id })
+      .then(r => r.data),
+
+  // Al volver de Checkout PRO: sincroniza el pago por su payment_id (y confirma el pedido).
+  confirmarRetorno: (payment_id: string) =>
+    axiosInstance.post('/pagos/confirmar', { payment_id }).then(r => r.data),
+
+  // Verifica el estado del pago de un pedido (busca en MP por external_reference).
+  verificarPago: (pedido_id: number) =>
+    axiosInstance
+      .post<{ estado: string; mp_status: string }>('/pagos/verificar', { pedido_id })
+      .then(r => r.data),
 }

@@ -79,6 +79,10 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
     queryFn: () => ingredientesApi.getAll(),
   })
   const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteConCantidad[]>([])
+  const [busquedaIng, setBusquedaIng] = useState('')
+  const ingredientesFiltrados = busquedaIng.trim()
+    ? ingredientesDisponibles.filter(i => i.nombre.toLowerCase().includes(busquedaIng.trim().toLowerCase()))
+    : ingredientesDisponibles
  
   // Cálculo automático en tiempo real
   const costoIngredientes = ingredientesSeleccionados.reduce((sum, { ingrediente, cantidad }) => {
@@ -194,10 +198,18 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             <label className="block text-xs font-medium text-slate-400 mb-2">
               Ingredientes * <span className="text-slate-500">(al menos uno)</span>
             </label>
+            <input
+              className="input-field mb-2"
+              placeholder="🔍 Buscar ingrediente..."
+              value={busquedaIng}
+              onChange={e => setBusquedaIng(e.target.value)}
+            />
             <div className="border border-border rounded-lg p-3 max-h-36 overflow-y-auto space-y-1 mb-3">
               {ingredientesDisponibles.length === 0
                 ? <p className="text-slate-500 text-xs">No hay ingredientes cargados</p>
-                : ingredientesDisponibles.map(ing => {
+                : ingredientesFiltrados.length === 0
+                ? <p className="text-slate-500 text-xs">Sin resultados para "{busquedaIng}"</p>
+                : ingredientesFiltrados.map(ing => {
                   const seleccionado = ingredientesSeleccionados.some(i => i.ingrediente.id === ing.id)
                   return (
                     <label key={ing.id} className={`flex items-center gap-2 cursor-pointer rounded px-2 py-1 transition-colors ${

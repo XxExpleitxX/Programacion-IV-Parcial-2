@@ -8,12 +8,13 @@
  *   refetchea el estado actual con GET /pedidos/{id} + /historial.
  * - Badge de conexión "En vivo / Sin conexión".
  */
-import { useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { pedidosApi } from '../../shared/api/index'
+import { pedidosApi, pagosApi } from '../../shared/api/index'
 import { useAuth } from '../../store/authStore'
 import { useWS } from '../../store/wsStore'
+import { useUI } from '../../store/uiStore'
 import { useOrderStatusWS } from '../../shared/hooks/useOrderStatusWS'
 
 const FLUJO = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'ENTREGADO'] as const
@@ -33,6 +34,9 @@ export default function SeguimientoPedidoPage() {
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
   const wsConectado = useWS(s => s.connected)
+  const addToast = useUI(s => s.addToast)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [verificando, setVerificando] = useState(false)
   const autenticado = isAuthenticated()
   const habilitado = autenticado && !Number.isNaN(pedidoId)
 
@@ -56,6 +60,19 @@ export default function SeguimientoPedidoPage() {
     prevConn.current = wsConectado
   }, [wsConectado])
 
+  // Retorno de Checkout PRO: MP redirige a /pedidos/{id}?payment_id=...&status=...
+  // Confirmamos el pago con ese id (re-consulta MP y confirma el pedido) y limpiamos la URL.
+  useEffect(() => {
+    if (!habilitado) return
+    const paymentId = searchParams.get('payment_id') || searchParams.get('collection_id')
+    if (!paymentId) return
+    pagosApi.confirmarRetorno(paymentId)
+      .then(() => { addToast('Pago procesado ✓', 'success'); invalidar() })
+      .catch(() => addToast('No se pudo confirmar el pago automáticamente', 'error'))
+      .finally(() => setSearchParams({}, { replace: true }))  // evita re-confirmar al refrescar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habilitado, searchParams])
+
   const { data: pedido, isLoading, isError } = useQuery({
     queryKey: ['pedido', pedidoId],
     queryFn: () => pedidosApi.getById(pedidoId),
@@ -67,6 +84,33 @@ export default function SeguimientoPedidoPage() {
     queryFn: () => pedidosApi.getHistorial(pedidoId),
     enabled: habilitado,
   })
+
+  // Al volver de Checkout PRO: si el pedido sigue PENDIENTE con MercadoPago,
+  // verificamos el pago en MP UNA vez (no depende del redirect con payment_id).
+  const yaVerificado = useRef(false)
+  useEffect(() => {
+    if (!pedido || yaVerificado.current) return
+    if (pedido.estado_codigo === 'PENDIENTE' && pedido.forma_pago_codigo === 'MERCADOPAGO') {
+      yaVerificado.current = true
+      pagosApi.verificarPago(pedidoId)
+        .then((r) => { if (r.estado === 'CONFIRMADO') { addToast('¡Pago confirmado! ✓', 'success'); invalidar() } })
+        .catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedido])
+
+  const handleVerificar = async () => {
+    setVerificando(true)
+    try {
+      const r = await pagosApi.verificarPago(pedidoId)
+      if (r.estado === 'CONFIRMADO') { addToast('¡Pago confirmado! ✓', 'success'); invalidar() }
+      else addToast('Todavía no se registró el pago. Esperá unos segundos y reintentá.', 'info')
+    } catch {
+      addToast('No se pudo verificar el pago.', 'error')
+    } finally {
+      setVerificando(false)
+    }
+  }
 
   if (!autenticado) return null
   if (isLoading) return <p className="text-gray-400 text-center py-20">Cargando pedido...</p>
@@ -124,6 +168,20 @@ export default function SeguimientoPedidoPage() {
       ) : (
         <div className="mb-6 bg-red-900/20 border border-red-900 text-red-300 px-4 py-3 rounded-xl text-sm">
           ✗ Este pedido fue cancelado.
+        </div>
+      )}
+
+      {/* Esperando pago de MercadoPago → verificación manual de respaldo */}
+      {pedido.estado_codigo === 'PENDIENTE' && pedido.forma_pago_codigo === 'MERCADOPAGO' && (
+        <div className="mb-5 bg-blue-900/20 border border-blue-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-blue-200">💳 ¿Ya pagaste con MercadoPago? Verificá el estado de tu pago.</p>
+          <button
+            onClick={handleVerificar}
+            disabled={verificando}
+            className="bg-[#009ee3] hover:bg-[#0089c7] disabled:bg-gray-700 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap transition-colors"
+          >
+            {verificando ? 'Verificando…' : 'Verificar pago'}
+          </button>
         </div>
       )}
 

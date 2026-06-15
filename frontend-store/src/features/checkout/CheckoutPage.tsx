@@ -24,6 +24,22 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
   // Pedido creado que quedó esperando el pago con tarjeta (fase 2).
   const [pedidoMP, setPedidoMP] = useState<Pedido | null>(null)
+  const [redirigiendo, setRedirigiendo] = useState(false)
+
+  // Checkout PRO: crea la preferencia y redirige a la página de pago de MercadoPago.
+  const pagarConCheckoutPro = async () => {
+    if (!pedidoMP) return
+    setError(null)
+    setRedirigiendo(true)
+    try {
+      const { init_point } = await pagosApi.crearPreferencia(pedidoMP.id)
+      limpiar()
+      window.location.href = init_point     // sale del SPA hacia MercadoPago
+    } catch (e) {
+      setError(getApiErrorMessage(e, 'No se pudo iniciar el pago con MercadoPago.'))
+      setRedirigiendo(false)
+    }
+  }
 
   const crearMut = useMutation({
     mutationFn: () => pedidosApi.crear({
@@ -65,18 +81,21 @@ export default function CheckoutPage() {
 
         {error && <p className="text-red-400 text-sm mb-4 bg-red-900/20 px-4 py-3 rounded-lg">{error}</p>}
 
-        {!MP_HABILITADO ? (
-          /* Sin public key de MP → no renderizamos el brick (evita pantalla en blanco). */
-          <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-xl p-5 text-sm text-yellow-200">
-            <p className="font-semibold mb-1">⚠️ MercadoPago no está configurado</p>
-            <p className="text-yellow-200/80">
-              Falta <code className="bg-black/30 px-1 rounded">VITE_MP_PUBLIC_KEY</code> en{' '}
-              <code className="bg-black/30 px-1 rounded">frontend-store/.env</code>. Tu pedido
-              #{pedidoMP.id} quedó creado en estado <b>PENDIENTE</b>; podés pagarlo más tarde.
-            </p>
-          </div>
-        ) : (
-        /* El brick necesita fondo claro */
+        {/* Opción 1 — Checkout PRO: redirige a la página de MercadoPago
+            (dinero en cuenta, tarjetas guardadas, etc.). No necesita public key. */}
+        <button
+          onClick={pagarConCheckoutPro}
+          disabled={redirigiendo}
+          className="w-full bg-[#009ee3] hover:bg-[#0089c7] disabled:bg-gray-700 text-white font-bold py-4 rounded-xl text-base transition-colors mb-4"
+        >
+          {redirigiendo ? 'Redirigiendo a MercadoPago…' : '💳 Pagar con MercadoPago'}
+        </button>
+
+        {/* Opción 2 — Tarjeta embebida (brick CardPayment), solo si hay public key. */}
+        {MP_HABILITADO && (
+        <>
+        <p className="text-gray-500 text-xs text-center mb-3">— o pagá con tarjeta acá —</p>
+        {/* El brick necesita fondo claro */}
         <div className="bg-white rounded-xl p-4">
           <CardPayment
             initialization={{ amount: Number(pedidoMP.total) }}
@@ -110,13 +129,14 @@ export default function CheckoutPage() {
             onError={() => setError('Error en el formulario de pago. Revisá los datos.')}
           />
         </div>
+        </>
         )}
 
         <button
           onClick={() => { limpiar(); navigate(`/pedidos/${pedidoMP.id}`) }}
-          className="text-gray-500 hover:text-gray-300 text-sm mt-4"
+          className="block text-gray-500 hover:text-gray-300 text-sm mt-4"
         >
-          {MP_HABILITADO ? 'Pagar más tarde →' : 'Ver mi pedido →'}
+          Pagar más tarde / ver mi pedido →
         </button>
       </div>
     )
