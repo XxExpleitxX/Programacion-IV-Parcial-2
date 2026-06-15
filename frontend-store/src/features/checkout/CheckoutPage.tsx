@@ -10,6 +10,9 @@ import { usePago } from '../../store/pagoStore'
 import { useUI } from '../../store/uiStore'
 import type { Pedido } from '../../shared/types'
 
+// MercadoPago solo funciona si hay public key configurada (VITE_MP_PUBLIC_KEY en .env).
+const MP_HABILITADO = Boolean(import.meta.env.VITE_MP_PUBLIC_KEY)
+
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { items, total, limpiar } = useCarrito()
@@ -57,15 +60,26 @@ export default function CheckoutPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-white mb-1">💳 Pagar con MercadoPago</h1>
         <p className="text-gray-400 text-sm mb-6">
-          Pedido #{pedidoMP.id} — Total <span className="text-orange-400 font-semibold">${pedidoMP.total.toFixed(2)}</span>
+          Pedido #{pedidoMP.id} — Total <span className="text-orange-400 font-semibold">${Number(pedidoMP.total).toFixed(2)}</span>
         </p>
 
         {error && <p className="text-red-400 text-sm mb-4 bg-red-900/20 px-4 py-3 rounded-lg">{error}</p>}
 
-        {/* El brick necesita fondo claro */}
+        {!MP_HABILITADO ? (
+          /* Sin public key de MP → no renderizamos el brick (evita pantalla en blanco). */
+          <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-xl p-5 text-sm text-yellow-200">
+            <p className="font-semibold mb-1">⚠️ MercadoPago no está configurado</p>
+            <p className="text-yellow-200/80">
+              Falta <code className="bg-black/30 px-1 rounded">VITE_MP_PUBLIC_KEY</code> en{' '}
+              <code className="bg-black/30 px-1 rounded">frontend-store/.env</code>. Tu pedido
+              #{pedidoMP.id} quedó creado en estado <b>PENDIENTE</b>; podés pagarlo más tarde.
+            </p>
+          </div>
+        ) : (
+        /* El brick necesita fondo claro */
         <div className="bg-white rounded-xl p-4">
           <CardPayment
-            initialization={{ amount: pedidoMP.total }}
+            initialization={{ amount: Number(pedidoMP.total) }}
             onSubmit={async (formData) => {
               setError(null)
               try {
@@ -96,12 +110,13 @@ export default function CheckoutPage() {
             onError={() => setError('Error en el formulario de pago. Revisá los datos.')}
           />
         </div>
+        )}
 
         <button
           onClick={() => { limpiar(); navigate(`/pedidos/${pedidoMP.id}`) }}
           className="text-gray-500 hover:text-gray-300 text-sm mt-4"
         >
-          Pagar más tarde →
+          {MP_HABILITADO ? 'Pagar más tarde →' : 'Ver mi pedido →'}
         </button>
       </div>
     )

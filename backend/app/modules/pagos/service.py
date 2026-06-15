@@ -82,7 +82,17 @@ def crear_pago(uow: UnitOfWork, usuario_id: int, data: CrearPagoRequest) -> Pago
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error comunicándose con MercadoPago: {e}")
 
+    # result = {"status": <http_code>, "response": <body>}.
+    # Si MP devolvió un error de API (401 credenciales, 400 request inválido, etc.),
+    # NO es un resultado de pago → error claro, sin persistir un Pago basura.
+    http_status = result.get("status")
     resp = result.get("response", {}) or {}
+    if isinstance(http_status, int) and http_status >= 400:
+        msg = resp.get("message") or resp.get("error") or "revisá las credenciales (MP_ACCESS_TOKEN)"
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"MercadoPago rechazó la solicitud ({http_status}): {msg}",
+        )
     if "status" not in resp:
         raise HTTPException(status_code=502, detail=f"MercadoPago rechazó la solicitud: {resp}")
 

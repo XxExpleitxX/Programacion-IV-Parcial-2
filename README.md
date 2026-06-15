@@ -163,6 +163,8 @@ pnpm dev             # http://localhost:5174
 | Email | Contraseña | Rol |
 |-------|-----------|-----|
 | `admin@foodstore.com` | `Admin1234!` | `ADMIN` |
+| `stock@foodstore.com` | `Stock1234!` | `STOCK` |
+| `pedidos@foodstore.com` | `Pedidos1234!` | `PEDIDOS` |
 | `cliente@foodstore.com` | `Cliente1234!` | `CLIENT` |
 
 ---

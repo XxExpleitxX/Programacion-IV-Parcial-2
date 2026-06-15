@@ -68,6 +68,30 @@ def test_crear_pago_aprobado_confirma_pedido(
     assert detalle.json()["estado_codigo"] == "CONFIRMADO"
 
 
+def test_pago_resuelve_usuario_por_header_no_cookie(
+    client, admin_headers, client_headers, producto_factory, monkeypatch
+):
+    # Regresión: el pago debe resolver al usuario del HEADER Bearer, no de la cookie.
+    # La cookie de localhost se comparte entre apps (tienda/admin) y puede quedar de
+    # otro usuario; con el bug (cookie-first) esto daba 403 "El pedido no te pertenece".
+    store = {}
+    monkeypatch.setattr("app.modules.pagos.service.get_sdk", lambda: _FakeSDK(store))
+
+    prod = producto_factory()
+    pedido_id = _crear_pedido_api(client, client_headers, prod.id)   # pedido del CLIENTE
+
+    # Contaminamos el cookie jar logueando al ADMIN (su token queda en la cookie)
+    client.post("/api/v1/auth/login", json={"username": "admin_test", "password": "Secret123"})
+
+    # Pagamos con el header del CLIENTE → debe resolver al cliente (dueño del pedido)
+    r = client.post("/api/v1/pagos/crear", headers=client_headers, json={
+        "pedido_id": pedido_id, "token": "tok", "payment_method_id": "visa",
+        "installments": 1, "payer_email": "cliente@test.com",
+    })
+    assert r.status_code == 201
+    assert r.json()["mp_status"] == "approved"
+
+
 def test_webhook_actualiza_pago(
     client, client_headers, producto_factory, monkeypatch
 ):

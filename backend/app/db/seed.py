@@ -9,8 +9,11 @@ Carga, en orden:
     2. EstadoPedido     → 5 estados: PENDIENTE, CONFIRMADO, EN_PREP, ENTREGADO, CANCELADO
     3. FormaPago        → MERCADOPAGO, EFECTIVO, TRANSFERENCIA
     4. UnidadMedida     → kg, g, L, ml, ud, porciones
-    5. Usuario admin    → admin@foodstore.com (username == email) / Admin1234!  (rol ADMIN)
-    6. Usuario cliente  → cliente@foodstore.com / Cliente1234!  (rol CLIENT)
+    5. Usuarios         → admin (obligatorio) + stock + pedidos + cliente (cortesía, uno por rol)
+                          admin@foodstore.com / Admin1234!         (ADMIN)
+                          stock@foodstore.com / Stock1234!         (STOCK)
+                          pedidos@foodstore.com / Pedidos1234!     (PEDIDOS)
+                          cliente@foodstore.com / Cliente1234!     (CLIENT)
 
 El commit es automático: lo hace el Unit of Work al cerrar el bloque `with`
 (si no hubo error). No hay commits manuales.
@@ -58,23 +61,14 @@ UNIDADES = [
     UnidadMedida(nombre="porciones", simbolo="porciones", tipo="contable"),
 ]
 
-# ── 5. Usuario admin (login es por email → username = email) ──────────────────
-ADMIN = {
-    "username": "admin@foodstore.com",   # el login busca por username; el front manda el email
-    "nombre":   "Admin",
-    "apellido": "Sistema",
-    "email":    "admin@foodstore.com",
-    "password": "Admin1234!",
-}
-
-# ── 6. Usuario cliente de prueba (rol CLIENT) ─────────────────────────────────
-CLIENTE = {
-    "username": "cliente@foodstore.com",
-    "nombre":   "Cliente",
-    "apellido": "Demo",
-    "email":    "cliente@foodstore.com",
-    "password": "Cliente1234!",
-}
+# ── 5. Usuarios del seed (login por email → username == email) ────────────────
+# Obligatorio: el admin. Los demás son de cortesía para probar/demostrar cada rol.
+USUARIOS = [
+    {"email": "admin@foodstore.com",   "nombre": "Admin",   "apellido": "Sistema", "password": "Admin1234!",   "rol": "ADMIN"},
+    {"email": "stock@foodstore.com",   "nombre": "Stock",   "apellido": "Demo",    "password": "Stock1234!",   "rol": "STOCK"},
+    {"email": "pedidos@foodstore.com", "nombre": "Pedidos", "apellido": "Demo",    "password": "Pedidos1234!", "rol": "PEDIDOS"},
+    {"email": "cliente@foodstore.com", "nombre": "Cliente", "apellido": "Demo",    "password": "Cliente1234!", "rol": "CLIENT"},
+]
 
 
 def seed():
@@ -112,44 +106,25 @@ def seed():
             else:
                 print(f"  ⏭️  ya existe: {u.simbolo}")
 
-        # Aseguramos que roles existan antes de asignar el rol del admin
+        # Aseguramos que los roles existan antes de asignarlos
         uow.flush()
 
-        print("── 5. Usuario admin ──")
-        admin_existe = uow.usuarios.get_by_username(ADMIN["username"])
-
-        if not admin_existe:
-            admin = Usuario(
-                username=ADMIN["username"],
-                nombre=ADMIN["nombre"],
-                apellido=ADMIN["apellido"],
-                email=ADMIN["email"],
-                hashed_password=hash_password(ADMIN["password"]),
+        print("── 5. Usuarios ──")
+        for u in USUARIOS:
+            if uow.usuarios.get_by_username(u["email"]):
+                print(f"  ⏭️  ya existe: {u['email']}")
+                continue
+            nuevo = Usuario(
+                username=u["email"],          # el front manda el email como username
+                nombre=u["nombre"],
+                apellido=u["apellido"],
+                email=u["email"],
+                hashed_password=hash_password(u["password"]),
             )
-            uow.usuarios.add(admin)
-            uow.flush()                       # genera admin.id (sin commitear)
-            uow.usuarios.assign_role(admin.id, "ADMIN")
-            print(f"  ✅ {ADMIN['email']} / {ADMIN['password']}")
-        else:
-            print("  ⏭️  el admin ya existe")
-
-        print("── 6. Usuario cliente ──")
-        cliente_existe = uow.usuarios.get_by_username(CLIENTE["username"])
-
-        if not cliente_existe:
-            cliente = Usuario(
-                username=CLIENTE["username"],
-                nombre=CLIENTE["nombre"],
-                apellido=CLIENTE["apellido"],
-                email=CLIENTE["email"],
-                hashed_password=hash_password(CLIENTE["password"]),
-            )
-            uow.usuarios.add(cliente)
-            uow.flush()                       # genera cliente.id (sin commitear)
-            uow.usuarios.assign_role(cliente.id, "CLIENT")
-            print(f"  ✅ {CLIENTE['email']} / {CLIENTE['password']}")
-        else:
-            print("  ⏭️  el cliente ya existe")
+            uow.usuarios.add(nuevo)
+            uow.flush()                       # genera nuevo.id (sin commitear)
+            uow.usuarios.assign_role(nuevo.id, u["rol"])
+            print(f"  ✅ {u['email']} / {u['password']}  ({u['rol']})")
 
     # Al salir del `with`, el UoW comitea todo automáticamente.
     print("\n✅ Seed completo.")
