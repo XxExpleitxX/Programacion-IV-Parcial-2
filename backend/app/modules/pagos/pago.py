@@ -10,6 +10,7 @@ mp_payment_id: ID que devuelve MP tras procesar el pago (NULL hasta webhook).
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, TYPE_CHECKING
+from sqlalchemy import BigInteger, Column
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
@@ -22,7 +23,11 @@ class Pago(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
     pedido_id:          int           = Field(foreign_key="pedidos.id")
-    mp_payment_id:      Optional[int] = Field(default=None, unique=True, nullable=True)
+    # BIGINT: los payment_id de MercadoPago superan el rango de INT (ej: 163485048043)
+    mp_payment_id:      Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, unique=True, nullable=True),
+    )
     mp_status:          str           = Field(max_length=30)           # approved | pending | rejected | ...
     mp_status_detail:   Optional[str] = Field(default=None, max_length=100)
     external_reference: str           = Field(max_length=100, unique=True)  # nuestro ID de referencia

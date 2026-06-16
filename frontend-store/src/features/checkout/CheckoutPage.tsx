@@ -26,16 +26,22 @@ export default function CheckoutPage() {
   const [pedidoMP, setPedidoMP] = useState<Pedido | null>(null)
   const [redirigiendo, setRedirigiendo] = useState(false)
 
-  // Checkout PRO: crea la preferencia y redirige a la página de pago de MercadoPago.
+  // Checkout PRO: crea la preferencia, abre MercadoPago en OTRA pestaña y deja la
+  // tienda en el seguimiento del pedido (ahí se auto-verifica / hay botón "Verificar pago").
   const pagarConCheckoutPro = async () => {
     if (!pedidoMP) return
     setError(null)
     setRedirigiendo(true)
+    // Abrimos la pestaña YA (en el gesto del click) para evitar el bloqueo de popups.
+    const mpTab = window.open('', '_blank')
     try {
       const { init_point } = await pagosApi.crearPreferencia(pedidoMP.id)
       limpiar()
-      window.location.href = init_point     // sale del SPA hacia MercadoPago
+      if (mpTab) mpTab.location.href = init_point   // cargamos MP en la pestaña nueva
+      else window.location.href = init_point         // fallback si bloquearon el popup
+      navigate(`/pedidos/${pedidoMP.id}`)            // la tienda queda en el seguimiento
     } catch (e) {
+      if (mpTab) mpTab.close()
       setError(getApiErrorMessage(e, 'No se pudo iniciar el pago con MercadoPago.'))
       setRedirigiendo(false)
     }

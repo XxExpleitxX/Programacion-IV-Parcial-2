@@ -4,23 +4,31 @@ Aplicación **full-stack** para la gestión integral de un negocio de comidas: c
 
 **Stack:** FastAPI + SQLModel + MySQL · React + TypeScript + Vite · TanStack Query · Zustand · WebSocket · Cloudinary · MercadoPago Checkout PRO
 
-> **Nota sobre la base de datos:** el sistema corre sobre **MySQL (XAMPP)**, uso aprobado por la cátedra para esta entrega.
+
+
 
 ---
 
-## 👥 Integrantes del grupo
+## Integrantes
 
-- Matias Martinez
-- Carla Bustos
-- Dario Sinatra
-- Emanuel Ortiz
-
-## 🎥 Video de demostración (10–15 min)
-
-🔗 https://youtu.be/OqynLC-KjSQ
+| Integrante |
+|---|
+| Matias Martinez |
+| Carla Bustos |
+| Dario Sinatra |
+| Emanuel Ortiz |
 
 ---
 
+## Videos de entrega
+
+| Instancia | Link de YouTube |
+|---|---|
+| Video Parcial 1 | https://www.youtube.com/watch?v=UBQqctKv3ps |
+| Video Parcial 2 | https://www.youtube.com/watch?v=RBDYG3Y-Fgo |
+| Video Final TPI | https://www.youtube.com/watch?v=-T0XDek7wBo |
+
+---
 ## ✨ Funcionalidades
 
 - **Autenticación JWT** (access 30 min + refresh 7 días) con **invalidación de refresh token**, cookie httpOnly y **rate limiting** (5 intentos fallidos por IP / 15 min → HTTP 429).
