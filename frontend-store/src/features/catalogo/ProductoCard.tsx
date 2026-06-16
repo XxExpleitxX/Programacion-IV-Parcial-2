@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Producto } from '../../shared/types/index'
 import { useCarrito } from '../../store/carritoStore'
@@ -12,10 +13,12 @@ export default function ProductoCard({ producto }: Props) {
   const navigate = useNavigate()
   const agregar = useCarrito(s => s.agregar)
   const addToast = useUI(s => s.addToast)
+  const [cantidad, setCantidad] = useState(1)
 
   const handleAgregar = () => {
-    agregar(producto)
-    addToast(`${producto.nombre} agregado al carrito`, 'success')
+    agregar(producto, cantidad)
+    addToast(`${cantidad}x ${producto.nombre} al carrito`, 'success')
+    setCantidad(1)
   }
 
   return (
@@ -72,7 +75,7 @@ export default function ProductoCard({ producto }: Props) {
           </div>
         )}
 
-        {/* Precio y Acciones */}
+        {/* Precio y Detalles */}
         <div className="flex items-end justify-between pt-2 border-t border-gray-800">
           <div className="flex flex-col">
             <span className="text-gray-500 text-[10px] uppercase tracking-wider">Precio</span>
@@ -80,28 +83,50 @@ export default function ProductoCard({ producto }: Props) {
               ${producto.precio_base.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
           </div>
+          <button
+            onClick={() => navigate(`/productos/${producto.id}`)}
+            className="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-800"
+          >
+            Detalles
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2">
-            {/* Botón Ver más */}
+        {/* Selector de cantidad + Agregar */}
+        <div className="flex items-center gap-2">
+          {/* Stepper de cantidad */}
+          <div className="flex items-center bg-gray-800 border border-gray-700 rounded-xl">
             <button
-              onClick={() => navigate(`/productos/${producto.id}`)}
-              className="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-800"
+              type="button"
+              onClick={() => setCantidad(c => Math.max(1, c - 1))}
+              disabled={!producto.disponible || cantidad <= 1}
+              className="w-8 h-9 text-gray-300 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed text-lg leading-none"
+              aria-label="Restar"
             >
-              Detalles
+              −
             </button>
-            
-            {/* Botón Agregar */}
+            <span className="w-7 text-center text-white text-sm font-semibold tabular-nums">{cantidad}</span>
             <button
-              onClick={handleAgregar}
+              type="button"
+              onClick={() => setCantidad(c => c + 1)}
               disabled={!producto.disponible}
-              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 active:scale-95 flex items-center gap-1"
+              className="w-8 h-9 text-gray-300 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed text-lg leading-none"
+              aria-label="Sumar"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-              </svg>
-              Agregar
+              +
             </button>
           </div>
+
+          {/* Botón Agregar */}
+          <button
+            onClick={handleAgregar}
+            disabled={!producto.disponible}
+            className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 active:scale-95 flex items-center justify-center gap-1"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar
+          </button>
         </div>
       </div>
     </div>

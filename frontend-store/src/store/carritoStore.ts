@@ -9,7 +9,7 @@ import type { Producto, ItemCarrito } from '../shared/types/index'
 
 interface CarritoState {
   items: ItemCarrito[]
-  agregar: (producto: Producto) => void
+  agregar: (producto: Producto, cantidad?: number) => void
   quitar: (productoId: number) => void
   setCantidad: (productoId: number, cantidad: number) => void
   limpiar: () => void
@@ -22,18 +22,18 @@ export const useCarrito = create<CarritoState>()(
     (set, get) => ({
       items: [],
 
-      agregar: (producto) => set(state => {
+      agregar: (producto, cantidad = 1) => set(state => {
         const existe = state.items.find(i => i.producto.id === producto.id)
         if (existe) {
           return {
             items: state.items.map(i =>
               i.producto.id === producto.id
-                ? { ...i, cantidad: i.cantidad + 1 }
+                ? { ...i, cantidad: i.cantidad + cantidad }
                 : i
             )
           }
         }
-        return { items: [...state.items, { producto, cantidad: 1 }] }
+        return { items: [...state.items, { producto, cantidad }] }
       }),
 
       quitar: (productoId) => set(state => ({
