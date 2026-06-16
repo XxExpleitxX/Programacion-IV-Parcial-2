@@ -48,6 +48,25 @@ def listar_direcciones(
     return uow.direcciones.get_by_usuario(usuario.id)   # query en el repo, no acá
 
 
+@router.put("/{direccion_id}", response_model=DireccionRead)
+def editar_direccion(
+    direccion_id: Annotated[int, Path(ge=1)],
+    data: DireccionCreate,
+    uow: UoWDep,
+    usuario: Usuario = Depends(require_authenticated),
+):
+    """Edita una dirección propia."""
+    direccion = uow.direcciones.get_propia(direccion_id, usuario.id)
+    if not direccion:
+        raise HTTPException(status_code=404, detail="Dirección no encontrada.")
+    for campo, valor in data.model_dump().items():
+        setattr(direccion, campo, valor)
+    uow.direcciones.add(direccion)
+    uow.flush()
+    uow.refresh(direccion)
+    return direccion
+
+
 @router.patch("/{direccion_id}/principal", response_model=DireccionRead)
 def marcar_principal(
     direccion_id: Annotated[int, Path(ge=1)],

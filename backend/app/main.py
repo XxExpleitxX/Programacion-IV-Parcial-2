@@ -1,3 +1,4 @@
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,6 +46,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ─── Logging + timing de cada request (se ve por consola) ────────────────
+@app.middleware("http")
+async def log_y_timing(request: Request, call_next):
+    inicio = time.perf_counter()
+    response = await call_next(request)
+    ms = (time.perf_counter() - inicio) * 1000
+    print(f"[REQ] {request.method} {request.url.path} -> {response.status_code} ({ms:.1f} ms)")
+    response.headers["X-Process-Time-ms"] = f"{ms:.1f}"
+    return response
 
 
 # ─── Errores con formato RFC 7807 (simplificado): {detail, code} ─────────

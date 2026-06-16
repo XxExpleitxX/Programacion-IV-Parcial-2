@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance'
-import type { Producto, Categoria, Pedido, HistorialEstado, Paginated } from '../types'
+import type { Producto, Categoria, Pedido, HistorialEstado, Paginated, Direccion, DireccionInput } from '../types'
 
 // ─── Productos ────────────────────────────────────────────
 export const productosApi = {
@@ -109,4 +109,18 @@ export const pagosApi = {
     axiosInstance
       .post<{ estado: string; mp_status: string }>('/pagos/verificar', { pedido_id })
       .then(r => r.data),
+}
+
+// ─── Direcciones de entrega ───────────────────────────────
+export const direccionesApi = {
+  getAll: () =>
+    axiosInstance.get<Direccion[]>('/direcciones/').then(r => r.data),
+  crear: (data: DireccionInput) =>
+    axiosInstance.post<Direccion>('/direcciones/', data).then(r => r.data),
+  actualizar: (id: number, data: DireccionInput) =>
+    axiosInstance.put<Direccion>(`/direcciones/${id}`, data).then(r => r.data),
+  marcarPrincipal: (id: number) =>
+    axiosInstance.patch<Direccion>(`/direcciones/${id}/principal`).then(r => r.data),
+  eliminar: (id: number) =>
+    axiosInstance.delete(`/direcciones/${id}`).then(r => r.data),
 }

@@ -8,6 +8,7 @@ import CarritoPage from './features/carrito/CarritoPage'
 import CheckoutPage from './features/checkout/CheckoutPage'
 import MisPedidosPage from './features/pedidos/MisPedidosPage'
 import SeguimientoPedidoPage from './features/pedidos/SeguimientoPedidoPage'
+import DireccionesPage from './features/direcciones/DireccionesPage'
 import LoginPage from './features/auth/LoginPage'
 import Toasts from './shared/components/Toasts'
 
@@ -48,6 +49,12 @@ function Header() {
             <Link to="/mis-pedidos"
               className="text-gray-400 hover:text-white hover:bg-white/5 px-4 py-2 rounded-xl text-sm font-medium transition-all">
               📦 Mis pedidos
+            </Link>
+          )}
+          {isAuthenticated() && (
+            <Link to="/direcciones"
+              className="text-gray-400 hover:text-white hover:bg-white/5 px-4 py-2 rounded-xl text-sm font-medium transition-all">
+              📍 Direcciones
             </Link>
           )}
         </nav>
@@ -103,6 +110,7 @@ export default function App() {
         <Route path="/carrito" element={<CarritoPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/mis-pedidos" element={<MisPedidosPage />} />
+        <Route path="/direcciones" element={<DireccionesPage />} />
         <Route path="/pedidos/:id" element={<SeguimientoPedidoPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
