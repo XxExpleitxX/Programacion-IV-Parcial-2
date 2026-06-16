@@ -1,12 +1,5 @@
 /**
  * SeguimientoPedidoPage — seguimiento de UN pedido en tiempo real.
- *
- * - useOrderStatusWS({ pedidoId }) abre el WS del canal de ese pedido.
- * - Cada evento invalida las queries (pedido + historial) → la UI se actualiza
- *   sin recargar y el timeline crece solo.
- * - Resync (spec 9.6): cuando la conexión se restablece tras una caída, se
- *   refetchea el estado actual con GET /pedidos/{id} + /historial.
- * - Badge de conexión "En vivo / Sin conexión".
  */
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
@@ -37,31 +30,36 @@ export default function SeguimientoPedidoPage() {
   const addToast = useUI(s => s.addToast)
   const [searchParams, setSearchParams] = useSearchParams()
   const [verificando, setVerificando] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
   const autenticado = isAuthenticated()
   const habilitado = autenticado && !Number.isNaN(pedidoId)
 
-  // Redirección a login como efecto (sin cortar el orden de los hooks).
   useEffect(() => {
     if (!autenticado) navigate('/login')
   }, [autenticado, navigate])
+
+  // Si esta es la pestaña de MP (redirigida desde MP de vuelta), cerrala
+  useEffect(() => {
+    const mpTabPedido = localStorage.getItem('mp_tab_pedido')
+    if (mpTabPedido === String(pedidoId) && window.opener) {
+      localStorage.removeItem('mp_tab_pedido')
+      window.close()
+    }
+  }, [pedidoId])
 
   const invalidar = () => {
     queryClient.invalidateQueries({ queryKey: ['pedido', pedidoId] })
     queryClient.invalidateQueries({ queryKey: ['pedido-historial', pedidoId] })
   }
 
-  // WS del canal de este pedido; cada evento refresca pedido + historial.
   useOrderStatusWS({ pedidoId, onEvent: invalidar, enabled: habilitado })
 
-  // Resync al reconectar: cuando connected pasa de false → true, refetch (spec 9.6).
   const prevConn = useRef(wsConectado)
   useEffect(() => {
     if (wsConectado && !prevConn.current) invalidar()
     prevConn.current = wsConectado
   }, [wsConectado])
 
-  // Retorno de Checkout PRO: MP redirige a /pedidos/{id}?payment_id=...&status=...
-  // Confirmamos el pago con ese id (re-consulta MP y confirma el pedido) y limpiamos la URL.
   useEffect(() => {
     if (!habilitado) return
     const paymentId = searchParams.get('payment_id') || searchParams.get('collection_id')
@@ -69,7 +67,7 @@ export default function SeguimientoPedidoPage() {
     pagosApi.confirmarRetorno(paymentId)
       .then(() => { addToast('Pago procesado ✓', 'success'); invalidar() })
       .catch(() => addToast('No se pudo confirmar el pago automáticamente', 'error'))
-      .finally(() => setSearchParams({}, { replace: true }))  // evita re-confirmar al refrescar
+      .finally(() => setSearchParams({}, { replace: true }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habilitado, searchParams])
 
@@ -85,8 +83,6 @@ export default function SeguimientoPedidoPage() {
     enabled: habilitado,
   })
 
-  // Al volver de Checkout PRO: si el pedido sigue PENDIENTE con MercadoPago,
-  // verificamos el pago en MP UNA vez (no depende del redirect con payment_id).
   const yaVerificado = useRef(false)
   useEffect(() => {
     if (!pedido || yaVerificado.current) return
@@ -98,6 +94,21 @@ export default function SeguimientoPedidoPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedido])
+
+  // Arranca el countdown cuando el pedido se confirma
+  useEffect(() => {
+    if (pedido?.estado_codigo === 'CONFIRMADO' && countdown === null) {
+      setCountdown(5)
+    }
+  }, [pedido?.estado_codigo])
+
+  // Cuenta regresiva y redirect a mis-pedidos
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown === 0) { navigate('/mis-pedidos'); return }
+    const t = setTimeout(() => setCountdown(c => (c ?? 1) - 1), 1000)
+    return () => clearTimeout(t)
+  }, [countdown])
 
   const handleVerificar = async () => {
     setVerificando(true)
@@ -143,7 +154,16 @@ export default function SeguimientoPedidoPage() {
         </span>
       </div>
 
-      {/* Stepper del flujo (salvo cancelado) */}
+      {/* Banner countdown al confirmar */}
+      {countdown !== null && (
+        <div className="mb-5 bg-green-900/20 border border-green-800/50 rounded-xl p-4 text-center">
+          <p className="text-green-300 text-sm font-medium">
+            ✅ ¡Pago confirmado! Volviendo a tus pedidos en{' '}
+            <span className="font-bold text-white">{countdown}</span> segundos...
+          </p>
+        </div>
+      )}
+
       {!cancelado ? (
         <div className="flex items-center justify-between mb-8">
           {FLUJO.map((estado, i) => {
@@ -171,7 +191,6 @@ export default function SeguimientoPedidoPage() {
         </div>
       )}
 
-      {/* Esperando pago de MercadoPago → verificación manual de respaldo */}
       {pedido.estado_codigo === 'PENDIENTE' && pedido.forma_pago_codigo === 'MERCADOPAGO' && (
         <div className="mb-5 bg-blue-900/20 border border-blue-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
           <p className="text-sm text-blue-200">💳 ¿Ya pagaste con MercadoPago? Verificá el estado de tu pago.</p>
@@ -185,7 +204,6 @@ export default function SeguimientoPedidoPage() {
         </div>
       )}
 
-      {/* Timeline del historial (audit trail append-only, en tiempo real) */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-5">
         <h2 className="text-white font-semibold mb-4">Seguimiento</h2>
         <ol className="relative border-l border-gray-700 ml-2 space-y-5">
@@ -206,7 +224,6 @@ export default function SeguimientoPedidoPage() {
         </ol>
       </div>
 
-      {/* Resumen del pedido */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <div className="space-y-1 mb-3">
           {(pedido.detalles ?? []).map((d, i) => (

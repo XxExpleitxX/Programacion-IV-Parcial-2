@@ -23,7 +23,7 @@ from app.unit_of_work import UnitOfWork
 
 
 # URL de la tienda para las back_urls de Checkout PRO (a dónde vuelve el cliente).
-FRONT_URL = "http://localhost:5173"
+FRONT_URL = "http://localhost:5174"
 
 
 def crear_preferencia(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
@@ -51,16 +51,15 @@ def crear_preferencia(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
         for d in pedido.detalles
     ]
     preference_data = {
-        "items": items,
-        "external_reference": external_reference,
-        "back_urls": {
-            "success": f"{FRONT_URL}/pedidos/{pedido.id}",
-            "failure": f"{FRONT_URL}/pedidos/{pedido.id}",
-            "pending": f"{FRONT_URL}/pedidos/{pedido.id}",
-        },
-        # Sin "auto_return": MercadoPago lo rechaza con back_urls localhost.
-        # El cliente vuelve con el botón "Volver al sitio" de la página de MP.
-    }
+    "items": items,
+    "external_reference": external_reference,
+    "back_urls": {
+        "success": f"{FRONT_URL}/pedidos/{pedido.id}",
+        "failure": f"{FRONT_URL}/pedidos/{pedido.id}",
+        "pending": f"{FRONT_URL}/pedidos/{pedido.id}",
+    },
+    "notification_url": "https://zombie-unify-gothic.ngrok-free.dev/api/v1/pagos/webhook",  # ← esto
+}
 
     try:
         result = get_sdk().preference().create(preference_data)

@@ -4,6 +4,7 @@ POST   /pagos/crear            → crea el pago con el token de tarjeta — Card
 POST   /pagos/preferencia      → crea preferencia Checkout PRO, devuelve init_point (CLIENT)
 POST   /pagos/confirmar        → al volver de Checkout PRO, sincroniza el pago (CLIENT)
 POST   /pagos/webhook          → IPN de MercadoPago (público)
+GET    /pagos/webhook          → verificación de URL por MercadoPago
 GET    /pagos/{pedido_id}      → consulta el pago de un pedido (dueño/ADMIN)
 """
 from typing import Annotated
@@ -28,8 +29,6 @@ UserDep = Annotated[Usuario, Depends(get_current_active_user)]
 
 @router.post("/crear", response_model=PagoResponse, status_code=status.HTTP_201_CREATED)
 def crear_pago_endpoint(body: CrearPagoRequest, uow: UoWDep, current_user: UserDep):
-    # Si el pago se aprueba, el Service confirma el pedido y encola el evento WS;
-    # get_uow lo emite DESPUÉS del commit (RN-06).
     return crear_pago(uow, current_user.id, body)
 
 
@@ -58,6 +57,12 @@ def verificar_endpoint(body: PreferenciaRequest, uow: UoWDep, current_user: User
     return verificar_pago(uow, current_user.id, body.pedido_id)
 
 
+@router.get("/webhook")
+async def webhook_get(request: Request):
+    """MP usa GET para verificar que la URL existe antes de registrarla."""
+    return {"status": "ok"}
+
+
 @router.post("/webhook")
 async def webhook(request: Request, uow: UoWDep):
     """IPN de MercadoPago. Acepta el id por body JSON o por query params."""
@@ -77,7 +82,6 @@ async def webhook(request: Request, uow: UoWDep):
             payment_id = qp.get("id") or qp.get("data.id")
 
     if payment_id:
-        # procesar_webhook sincroniza el pago y encola el evento WS (post-commit).
         procesar_webhook(uow, str(payment_id))
 
     return {"status": "ok"}

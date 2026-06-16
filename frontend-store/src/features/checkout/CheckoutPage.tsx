@@ -10,7 +10,6 @@ import { usePago } from '../../store/pagoStore'
 import { useUI } from '../../store/uiStore'
 import type { Pedido } from '../../shared/types'
 
-// MercadoPago solo funciona si hay public key configurada (VITE_MP_PUBLIC_KEY en .env).
 const MP_HABILITADO = Boolean(import.meta.env.VITE_MP_PUBLIC_KEY)
 
 export default function CheckoutPage() {
@@ -22,24 +21,22 @@ export default function CheckoutPage() {
   const [formaPago, setFormaPago] = useState('EFECTIVO')
   const [notas, setNotas] = useState('')
   const [error, setError] = useState<string | null>(null)
-  // Pedido creado que quedó esperando el pago con tarjeta (fase 2).
   const [pedidoMP, setPedidoMP] = useState<Pedido | null>(null)
   const [redirigiendo, setRedirigiendo] = useState(false)
 
-  // Checkout PRO: crea la preferencia, abre MercadoPago en OTRA pestaña y deja la
-  // tienda en el seguimiento del pedido (ahí se auto-verifica / hay botón "Verificar pago").
   const pagarConCheckoutPro = async () => {
     if (!pedidoMP) return
     setError(null)
     setRedirigiendo(true)
-    // Abrimos la pestaña YA (en el gesto del click) para evitar el bloqueo de popups.
     const mpTab = window.open('', '_blank')
     try {
       const { init_point } = await pagosApi.crearPreferencia(pedidoMP.id)
       limpiar()
-      if (mpTab) mpTab.location.href = init_point   // cargamos MP en la pestaña nueva
-      else window.location.href = init_point         // fallback si bloquearon el popup
-      navigate(`/pedidos/${pedidoMP.id}`)            // la tienda queda en el seguimiento
+      // Guardamos el pedido_id para que la pestaña de MP sepa que debe cerrarse
+      localStorage.setItem('mp_pestaña_pedido', String(pedidoMP.id))
+      if (mpTab) mpTab.location.href = init_point
+      else window.location.href = init_point
+      navigate(`/pedidos/${pedidoMP.id}`)
     } catch (e) {
       if (mpTab) mpTab.close()
       setError(getApiErrorMessage(e, 'No se pudo iniciar el pago con MercadoPago.'))
@@ -55,7 +52,7 @@ export default function CheckoutPage() {
     }),
     onSuccess: (pedido) => {
       if (formaPago === 'MERCADOPAGO') {
-        setPedidoMP(pedido)              // pasa a la fase de pago con tarjeta
+        setPedidoMP(pedido)
       } else {
         limpiar()
         navigate(`/pedidos/${pedido.id}`)
@@ -74,9 +71,6 @@ export default function CheckoutPage() {
     return null
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // FASE 2 — Pago con MercadoPago (brick CardPayment, PCI-compliant)
-  // ─────────────────────────────────────────────────────────────
   if (pedidoMP) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -87,8 +81,6 @@ export default function CheckoutPage() {
 
         {error && <p className="text-red-400 text-sm mb-4 bg-red-900/20 px-4 py-3 rounded-lg">{error}</p>}
 
-        {/* Opción 1 — Checkout PRO: redirige a la página de MercadoPago
-            (dinero en cuenta, tarjetas guardadas, etc.). No necesita public key. */}
         <button
           onClick={pagarConCheckoutPro}
           disabled={redirigiendo}
@@ -97,11 +89,9 @@ export default function CheckoutPage() {
           {redirigiendo ? 'Redirigiendo a MercadoPago…' : '💳 Pagar con MercadoPago'}
         </button>
 
-        {/* Opción 2 — Tarjeta embebida (brick CardPayment), solo si hay public key. */}
         {MP_HABILITADO && (
         <>
         <p className="text-gray-500 text-xs text-center mb-3">— o pagá con tarjeta acá —</p>
-        {/* El brick necesita fondo claro */}
         <div className="bg-white rounded-xl p-4">
           <CardPayment
             initialization={{ amount: Number(pedidoMP.total) }}
@@ -148,9 +138,6 @@ export default function CheckoutPage() {
     )
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // FASE 1 — Confirmar el pedido
-  // ─────────────────────────────────────────────────────────────
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <button onClick={() => navigate('/carrito')} className="text-gray-400 hover:text-white text-sm mb-6 flex items-center gap-1">
@@ -159,7 +146,6 @@ export default function CheckoutPage() {
 
       <h1 className="text-2xl font-bold text-white mb-6">Confirmar pedido</h1>
 
-      {/* Resumen de items */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-5">
         <h2 className="text-white font-semibold mb-3">Tu pedido</h2>
         <div className="space-y-2">
@@ -184,7 +170,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Forma de pago */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-5">
         <h2 className="text-white font-semibold mb-3">Forma de pago</h2>
         <div className="grid grid-cols-3 gap-3">
@@ -210,7 +195,6 @@ export default function CheckoutPage() {
         )}
       </div>
 
-      {/* Notas */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
         <h2 className="text-white font-semibold mb-3">Notas del pedido</h2>
         <textarea
