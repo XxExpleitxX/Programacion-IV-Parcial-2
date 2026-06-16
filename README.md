@@ -202,7 +202,7 @@ Ver plantilla completa en [`backend/.env.example`](./backend/.env.example).
 | **Unidades de medida** | `GET /unidades-medida` |
 | **Pedidos** | `POST /pedidos` · `GET /pedidos` · `GET /pedidos/{id}` · `POST /pedidos/{id}/estado` · `GET /pedidos/{id}/historial` |
 | **Direcciones** | `POST /direcciones` · `GET /direcciones` · `PATCH /direcciones/{id}/principal` · `DELETE /direcciones/{id}` |
-| **Pagos (MercadoPago)** | `POST /pagos/crear` · `POST /pagos/webhook` · `GET /pagos/{pedido_id}` |
+| **Pagos (MercadoPago)** | `POST /pagos/crear` (CardPayment) · `POST /pagos/preferencia` (Checkout PRO) · `POST /pagos/confirmar` · `POST /pagos/verificar` · `POST /pagos/webhook` · `GET /pagos/{pedido_id}` |
 | **Uploads (Cloudinary)** | `POST /uploads/imagen` · `DELETE /uploads/imagen/{public_id}` |
 | **Admin** | gestión de usuarios y roles (solo `ADMIN`) |
 | **Estadísticas** | `GET /estadisticas/resumen` · `/ventas` · `/productos-top` · `/pedidos-por-estado` · `/ingresos` (solo `ADMIN`) |
@@ -247,7 +247,7 @@ pytest                          # correr toda la suite
 pytest --cov=app                # con reporte de cobertura
 ```
 
-**32 tests · cobertura 78%.** Cubre: registro/login/logout/refresh, rate limiting, FSM de pedidos, historial append-only (RN-02), reglas de cancelación (RN-05), pagos MercadoPago (SDK mockeado), uploads Cloudinary (SDK mockeado), estadísticas (RBAC + exclusión de cancelados), **WebSocket** (`websocket_connect`: broadcast post-commit al canal del pedido y al feed admin, cierre por token inválido), **productos** (CRUD + stock + roundtrip de `imagenes_url`), **paginación** (envelope) y **formato de error** (RFC 7807).
+**38 tests · cobertura ~78%.** Cubre: registro/login/logout/refresh, rate limiting, FSM de pedidos, historial append-only (RN-02), reglas de cancelación por rol (RN-05: cliente cancela en PENDIENTE/CONFIRMADO, no en EN_PREP), pagos MercadoPago (SDK mockeado), uploads Cloudinary (SDK mockeado), estadísticas (RBAC + exclusión de cancelados), **WebSocket** (`websocket_connect`: broadcast post-commit al canal del pedido y al feed admin, cierre por token inválido y por token expirado 4001), **productos** (CRUD + stock + roundtrip de `imagenes_url` + borrado en Cloudinary), **paginación** (envelope) y **formato de error** (RFC 7807).
 
 ---
 
