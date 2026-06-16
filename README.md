@@ -24,9 +24,8 @@ Aplicación **full-stack** para la gestión integral de un negocio de comidas: c
 
 | Instancia | Link de YouTube |
 |---|---|
-| Video Parcial 1 | https://www.youtube.com/watch?v=UBQqctKv3ps |
-| Video Parcial 2 | https://www.youtube.com/watch?v=RBDYG3Y-Fgo |
-| Video Final TPI | https://www.youtube.com/watch?v=-T0XDek7wBo |
+| Video Parcial 1 | https://youtu.be/OqynLC-KjSQ |
+| Video Final TPI |  |
 
 ---
 ## ✨ Funcionalidades
