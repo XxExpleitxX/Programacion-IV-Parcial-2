@@ -26,6 +26,7 @@ from fastapi import HTTPException, status
 from app.modules.pedidos.pedido import Pedido
 from app.modules.pedidos.detalle_pedido import DetallePedido
 from app.modules.pedidos.historial_estado_pedido import HistorialEstadoPedido
+from app.modules.productos.producto import Producto
 from app.schemas.pago_schema import PedidoCreate, AvanzarEstadoRequest
 from app.schemas.pagination import paginate
 from app.unit_of_work import UnitOfWork
@@ -85,6 +86,79 @@ def _validar_transicion(estado_actual: str, estado_hacia: str, roles: list[str])
 class PedidoService:
 
     @staticmethod
+    def _verificar_stock(uow: UnitOfWork, producto: Producto, cantidad_pedida: int) -> None:
+        """Valida que haya stock suficiente ANTES de descontar. Si no, rechaza el
+        pedido (un local real no puede vender lo que no tiene).
+
+        Lee el stock ya descontado por ítems previos del mismo pedido (los objetos
+        viven en la sesión), así cubre líneas repetidas o insumos compartidos.
+        """
+        if producto.es_manufacturado:
+            faltantes = []
+            for pi in producto.producto_ingredientes:
+                ingrediente = uow.ingredientes.get_by_id(pi.ingrediente_id)
+                disponible = (ingrediente.stock_disponible or 0) if ingrediente else 0
+                requerido = pi.cantidad * cantidad_pedida
+                if disponible < requerido:
+                    faltantes.append(ingrediente.nombre if ingrediente else f"ingrediente #{pi.ingrediente_id}")
+            if faltantes:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Stock de insumos insuficiente para '{producto.nombre}': falta {', '.join(faltantes)}.",
+                )
+        else:
+            disponible = producto.stock_cantidad or 0
+            if disponible < cantidad_pedida:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Stock insuficiente de '{producto.nombre}': quedan {disponible} y se pidieron {cantidad_pedida}.",
+                )
+
+    @staticmethod
+    def _ajustar_stock(uow: UnitOfWork, producto: Producto, cantidad_pedida: int, signo: int) -> None:
+        """Mueve el stock que consume un pedido.
+
+        signo = -1 → descuenta (al CREAR el pedido).
+        signo = +1 → restaura (al CANCELAR el pedido).
+
+        - Manufacturado: descuenta/restaura cada ingrediente de la receta
+          (cantidad_receta × cantidad_pedida).
+        - Terminado: descuenta/restaura su stock_cantidad. Al agotarse (≤0) se
+          marca disponible=False (sale del menú); reactivar es manual.
+        """
+        if producto.es_manufacturado:
+            for pi in producto.producto_ingredientes:
+                ingrediente = uow.ingredientes.get_by_id(pi.ingrediente_id)
+                if ingrediente:
+                    consumo = pi.cantidad * cantidad_pedida
+                    ingrediente.stock_disponible = (ingrediente.stock_disponible or 0) + signo * consumo
+                    uow.ingredientes.add(ingrediente)
+        else:
+            producto.stock_cantidad = (producto.stock_cantidad or 0) + signo * cantidad_pedida
+            # Auto-agotar: si una venta dejó el stock en 0, lo sacamos del menú.
+            if signo < 0 and (producto.stock_cantidad or 0) <= 0:
+                producto.disponible = False
+            uow.productos.add(producto)
+
+    @staticmethod
+    def _auto_agotar_manufacturados(uow: UnitOfWork, ingrediente_ids: set[int]) -> None:
+        """Tras consumir insumos, saca del menú los manufacturados que ya no se
+        pueden producir (algún ingrediente no alcanza ni para 1 unidad).
+        Reactivar es manual (reponer insumos + prender el switch)."""
+        for prod in uow.productos.get_manufacturados_que_usan(list(ingrediente_ids)):
+            if not prod.disponible:
+                continue
+            producible = True
+            for pi in prod.producto_ingredientes:
+                ingrediente = uow.ingredientes.get_by_id(pi.ingrediente_id)
+                if (ingrediente.stock_disponible if ingrediente else 0) < pi.cantidad:
+                    producible = False
+                    break
+            if not producible:
+                prod.disponible = False
+                uow.productos.add(prod)
+
+    @staticmethod
     def crear_pedido(uow: UnitOfWork, usuario_id: int, data: PedidoCreate) -> Pedido:
         # ── Forma de pago: vía repo (antes: uow.session.get) ──────────────
         forma = uow.formas_pago.get_by_id(data.forma_pago_codigo)
@@ -93,6 +167,7 @@ class PedidoService:
 
         detalles: list[DetallePedido] = []
         subtotal = Decimal("0.00")
+        ingredientes_afectados: set[int] = set()
 
         for item in data.items:
             # ── Producto: vía repo (antes: uow.session.get) ───────────────
@@ -115,6 +190,18 @@ class PedidoService:
                 subtotal_snap   = sub,
                 personalizacion = item.personalizacion,
             ))
+
+            # Valida stock suficiente y luego descuenta lo que consume este ítem
+            # (insumos si es manufacturado, stock_cantidad si es terminado).
+            # Se restaura si el pedido se cancela.
+            PedidoService._verificar_stock(uow, producto, item.cantidad)
+            PedidoService._ajustar_stock(uow, producto, item.cantidad, signo=-1)
+            if producto.es_manufacturado:
+                ingredientes_afectados.update(pi.ingrediente_id for pi in producto.producto_ingredientes)
+
+        # Tras descontar todos los insumos del pedido, saca del menú los
+        # manufacturados que quedaron sin poder producirse.
+        PedidoService._auto_agotar_manufacturados(uow, ingredientes_afectados)
 
         costo_envio = Decimal("50.00") if data.direccion_id else Decimal("0.00")
         total = subtotal + costo_envio
@@ -181,6 +268,14 @@ class PedidoService:
                 )
 
         _validar_transicion(estado_actual, estado_hacia, roles)
+
+        # Al cancelar, devolvemos al stock todo lo que el pedido había descontado
+        # al crearse (insumos de manufacturados + stock_cantidad de terminados).
+        if estado_hacia == "CANCELADO":
+            for det in uow.detalles.get_by_pedido(pedido.id):
+                producto = uow.productos.get_by_id(det.producto_id)
+                if producto:
+                    PedidoService._ajustar_stock(uow, producto, det.cantidad, signo=+1)
 
         pedido.estado_codigo = estado_hacia
         pedido.updated_at    = datetime.utcnow()

@@ -65,14 +65,35 @@ class ProductoRepository(BaseRepository[Producto]):
             ProductoCategoria(producto_id=producto_id, categoria_id=categoria_id)
         )
 
-    def add_ingrediente(self, producto_id: int, ingrediente_id: int, cantidad: float) -> None:
-        self.session.add(
-            ProductoIngrediente(
-                producto_id=producto_id,
-                ingrediente_id=ingrediente_id,
-                cantidad=cantidad,
-            )
+    def add_ingrediente(
+        self,
+        producto_id: int,
+        ingrediente_id: int,
+        cantidad: float,
+        unidad_medida_id: Optional[int] = None,
+    ) -> None:
+        pi = ProductoIngrediente(
+            producto_id=producto_id,
+            ingrediente_id=ingrediente_id,
+            cantidad=cantidad,
         )
+        if unidad_medida_id is not None:
+            pi.unidad_medida_id = unidad_medida_id
+        self.session.add(pi)
+
+    def get_manufacturados_que_usan(self, ingrediente_ids: List[int]) -> List[Producto]:
+        """Productos manufacturados activos cuya receta usa alguno de esos insumos."""
+        if not ingrediente_ids:
+            return []
+        query = (
+            select(Producto)
+            .join(ProductoIngrediente, ProductoIngrediente.producto_id == Producto.id)
+            .where(Producto.deleted_at == None)  # noqa: E711
+            .where(Producto.es_manufacturado == True)  # noqa: E712
+            .where(ProductoIngrediente.ingrediente_id.in_(ingrediente_ids))
+            .distinct()
+        )
+        return self.session.exec(query).all()
 
     def clear_categorias(self, producto: Producto) -> None:
         for pc in list(producto.producto_categorias):

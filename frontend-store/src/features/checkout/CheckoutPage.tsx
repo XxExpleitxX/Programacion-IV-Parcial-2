@@ -33,7 +33,7 @@ export default function CheckoutPage() {
       const { init_point } = await pagosApi.crearPreferencia(pedidoMP.id)
       limpiar()
       // Guardamos el pedido_id para que la pestaña de MP sepa que debe cerrarse
-      localStorage.setItem('mp_pestaña_pedido', String(pedidoMP.id))
+      localStorage.setItem('mp_pago_pendiente', String(pedidoMP.id))
       if (mpTab) mpTab.location.href = init_point
       else window.location.href = init_point
       navigate(`/pedidos/${pedidoMP.id}`)

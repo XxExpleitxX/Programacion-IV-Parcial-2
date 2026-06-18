@@ -24,6 +24,10 @@ class Categoria(SQLModel, table=True):
     descripcion: Optional[str] = Field(default=None)
     imagen_url:  Optional[str] = Field(default=None)
 
+    # Identidad visual de la sección del menú
+    icono: Optional[str] = Field(default=None, max_length=16)   # emoji, ej: 🍕
+    color: Optional[str] = Field(default=None, max_length=24)   # color del badge, ej: #8b5cf6
+
     # Audit
     created_at: datetime           = Field(default_factory=datetime.utcnow)
     updated_at: datetime           = Field(default_factory=datetime.utcnow)

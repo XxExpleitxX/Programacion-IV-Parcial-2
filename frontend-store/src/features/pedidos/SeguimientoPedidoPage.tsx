@@ -95,12 +95,25 @@ export default function SeguimientoPedidoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedido])
 
-  // Arranca el countdown cuando el pedido se confirma
-  useEffect(() => {
-    if (pedido?.estado_codigo === 'CONFIRMADO' && countdown === null) {
-      setCountdown(5)
-    }
-  }, [pedido?.estado_codigo])
+  const estadoAnterior = useRef<string | null>(null)
+
+useEffect(() => {
+  if (!pedido) return
+  const vieneDePago = localStorage.getItem('mp_pago_pendiente') === String(pedidoId)
+  
+  // Si viene de un pago reciente y el pedido ya está confirmado, arranca countdown directo
+  if (vieneDePago && pedido.estado_codigo === 'CONFIRMADO' && countdown === null) {
+    localStorage.removeItem('mp_pago_pendiente')
+    setCountdown(5)
+    return
+  }
+  // Si estaba PENDIENTE y pasó a CONFIRMADO en esta sesión, arranca countdown
+  if (estadoAnterior.current === 'PENDIENTE' && pedido.estado_codigo === 'CONFIRMADO' && countdown === null) {
+    localStorage.removeItem('mp_pago_pendiente')
+    setCountdown(5)
+  }
+  estadoAnterior.current = pedido.estado_codigo
+}, [pedido?.estado_codigo])
 
   // Cuenta regresiva y redirect a mis-pedidos
   useEffect(() => {

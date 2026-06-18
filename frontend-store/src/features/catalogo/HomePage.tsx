@@ -114,21 +114,34 @@ export default function HomePage() {
            </button>
 
            {/* Chips de Categorías */}
-           {categorias.map(({ cat, nivel }) => (
-             <button 
-               key={cat.id}
-               onClick={() => setCategoriaId(categoriaId === cat.id ? null : cat.id)}
-               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border whitespace-nowrap ${
-                 categoriaId === cat.id
-                   ? 'bg-white text-gray-900 border-white font-bold' // Activo: fondo blanco para contraste
-                   : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:border-gray-500'
-               }`}
-             >
-               {/* Agrega un pequeño margen a la izquierda si es subcategoría */}
-               {nivel > 0 && <span className="mr-1 opacity-50">↳</span>}
-               {cat.nombre}
-             </button>
-           ))}
+           {categorias.map(({ cat, nivel }) => {
+             const activo = categoriaId === cat.id
+             const color = cat.color || null
+             // Con color: activo = fondo sólido del color; inactivo = texto/borde tenue del color.
+             // Sin color: se mantiene el estilo original (blanco activo / gris inactivo).
+             const style = activo && color
+               ? { backgroundColor: color, borderColor: color, color: '#fff' }
+               : !activo && color
+               ? { borderColor: color + '66', color }
+               : undefined
+             return (
+               <button
+                 key={cat.id}
+                 onClick={() => setCategoriaId(activo ? null : cat.id)}
+                 style={style}
+                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border whitespace-nowrap ${
+                   activo
+                     ? color ? 'font-bold shadow-lg' : 'bg-white text-gray-900 border-white font-bold'
+                     : color ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:border-gray-500'
+                 }`}
+               >
+                 {/* Agrega un pequeño margen a la izquierda si es subcategoría */}
+                 {nivel > 0 && <span className="mr-1 opacity-50">↳</span>}
+                 {cat.icono && <span className="mr-1">{cat.icono}</span>}
+                 {cat.nombre}
+               </button>
+             )
+           })}
         </div>
       </div>
 

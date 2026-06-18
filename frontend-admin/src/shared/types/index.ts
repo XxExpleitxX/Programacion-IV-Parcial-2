@@ -22,6 +22,8 @@ export interface Categoria {
   descripcion: string | null;
   parent_id: number | null;
   imagen_url: string | null;
+  icono?: string | null;
+  color?: string | null;
   subcategorias?: Categoria[];
 }
 
@@ -30,6 +32,8 @@ export interface CategoriaCreate {
   descripcion?: string;
   parent_id?: number | null;
   imagen_url?: string | null;
+  icono?: string | null;
+  color?: string | null;
 }
 
 export interface CategoriaUpdate {
@@ -37,6 +41,8 @@ export interface CategoriaUpdate {
   descripcion?: string;
   parent_id?: number | null;
   imagen_url?: string | null;
+  icono?: string | null;
+  color?: string | null;
 }
 
 // ─── Ingrediente ─────────────────────────────────────────
@@ -69,6 +75,21 @@ export interface IngredienteUpdate {
 }
 
 // ─── Producto ────────────────────────────────────────────
+// Item de receta enviado al crear/editar (maestro-detalle).
+export interface IngredienteCantidad {
+  ingrediente_id: number;
+  cantidad: number;
+}
+
+// Ingrediente del producto tal como lo devuelve el backend (para precargar).
+export interface IngredienteEnProducto {
+  ingrediente_id: number;
+  nombre: string;
+  cantidad: number;
+  unidad: string | null;
+  es_alergeno: boolean;
+}
+
 export interface Producto {
   id: number;
   nombre: string;
@@ -79,6 +100,7 @@ export interface Producto {
   unidad_venta_id: number | null;
   es_manufacturado: boolean;
   categorias: Categoria[];
+  ingredientes: IngredienteEnProducto[];
   imagenes_url: string[];
 }
 
@@ -91,7 +113,7 @@ export interface ProductoCreate {
   unidad_venta_id?: number | null;
   categoria_ids: number[];
   es_manufacturado?: boolean;
-  ingrediente_ids?: number[];
+  ingredientes?: IngredienteCantidad[];
   imagenes_url?: string[];
 }
 
@@ -104,6 +126,7 @@ export interface ProductoUpdate {
   unidad_venta_id?: number | null;
   categoria_ids?: number[];
   es_manufacturado?: boolean;
+  ingredientes?: IngredienteCantidad[];
   imagenes_url?: string[];
 }
 

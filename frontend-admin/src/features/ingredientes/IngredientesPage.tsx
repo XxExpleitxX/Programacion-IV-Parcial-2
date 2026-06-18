@@ -57,40 +57,54 @@ function IngredienteForm({ initial, unidades, onSubmit, isLoading, error }: Form
         </div>
       </div>
 
-      {/* Unidad de medida como checkboxes */}
+      {/* Unidad de medida como selector de botones con icono */}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Unidad de medida</label>
         <div className="grid grid-cols-3 gap-2">
-          <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-border hover:border-brand-600 transition-colors">
-            <input type="radio" name="unidad" checked={unidadMedidaId === null}
-              onChange={() => setUnidadMedidaId(null)} className="accent-brand-600" />
-            <span className="text-sm text-slate-300">Sin unidad</span>
-          </label>
-          {unidades.map(u => (
-            <label key={u.id} className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-colors ${
-              unidadMedidaId === u.id ? 'border-brand-500 bg-brand-900/30' : 'border-border hover:border-brand-600'
+          <button type="button" onClick={() => setUnidadMedidaId(null)}
+            className={`p-2 rounded-lg border text-sm flex flex-col items-center gap-0.5 transition-all ${
+              unidadMedidaId === null
+                ? 'border-brand-500 bg-brand-900/30 text-brand-300'
+                : 'border-border hover:border-slate-500 text-slate-400'
             }`}>
-              <input type="radio" name="unidad" checked={unidadMedidaId === u.id}
-                onChange={() => setUnidadMedidaId(u.id)} className="accent-brand-600" />
-              <div>
-                <div className="text-sm text-slate-200 font-medium">{u.simbolo}</div>
-                <div className="text-xs text-slate-500">{u.nombre}</div>
-              </div>
-            </label>
+            <span className="text-lg">∅</span>
+            <span className="text-xs">Sin unidad</span>
+          </button>
+          {unidades.map(u => (
+            <button key={u.id} type="button" onClick={() => setUnidadMedidaId(u.id)}
+              className={`p-2 rounded-lg border text-sm flex flex-col items-center gap-0.5 transition-all ${
+                unidadMedidaId === u.id
+                  ? 'border-brand-500 bg-brand-900/30 text-brand-300'
+                  : 'border-border hover:border-slate-500 text-slate-400'
+              }`}>
+              <span className="text-lg font-bold">{u.simbolo}</span>
+              <span className="text-xs">{u.nombre}</span>
+            </button>
           ))}
         </div>
         {unidadMedidaId && (
-          <p className="text-xs text-slate-500 mt-1">
-            Stock en {unidades.find(u => u.id === unidadMedidaId)?.nombre ?? ''}.
-            Al agregar a un producto manufacturado podés poner decimales (ej: 0.300 {unidades.find(u => u.id === unidadMedidaId)?.simbolo ?? ''})
+          <p className="text-xs text-slate-500 mt-2">
+            💡 Ej: para una pizza usarás{' '}
+            <span className="text-slate-300 font-medium">0.200 {unidades.find(u => u.id === unidadMedidaId)?.simbolo ?? ''}</span>
+            {' '}de este ingrediente (admite decimales).
           </p>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <input type="checkbox" checked={esAlergeno} onChange={e => setEsAlergeno(e.target.checked)}
-          className="w-4 h-4 accent-brand-600" />
-        <span className="text-sm text-slate-300">Es alérgeno</span>
+      {/* Alérgeno como switch */}
+      <div onClick={() => setEsAlergeno(!esAlergeno)}
+        className="flex items-center justify-between cursor-pointer bg-surface border border-border rounded-lg px-3 py-2.5 select-none">
+        <span className="text-sm text-slate-300 flex items-center gap-2">
+          <span className="text-amber-400">{esAlergeno ? '🌾' : ''}</span>
+          ¿Es alérgeno?
+        </span>
+        <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          esAlergeno ? 'bg-amber-500' : 'bg-slate-600'
+        }`}>
+          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+            esAlergeno ? 'translate-x-5' : 'translate-x-0.5'
+          }`} />
+        </span>
       </div>
 
       {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
@@ -209,17 +223,15 @@ export default function IngredientesPage() {
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Nombre</th>
-                  <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio unitario</th>
                   <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Stock</th>
-                  <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Unidad</th>
-                  <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Alérgeno</th>
-                  <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
+                  <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Precio</th>
+                  <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {ingredientes.length === 0 && !isFetching && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-500">
+                    <td colSpan={4} className="py-8 text-center text-slate-500">
                       {search ? 'Sin resultados para tu búsqueda' : 'Sin ingredientes registrados'}
                     </td>
                   </tr>
@@ -227,10 +239,14 @@ export default function IngredientesPage() {
                 {ingredientes.map(ing => (
                   <tr key={ing.id} className="hover:bg-surface/50 transition-colors">
                     <td className="py-3">
-                      <div className="font-medium text-slate-100">{ing.nombre}</div>
+                      <div className="font-medium text-slate-100 flex items-center gap-1.5">
+                        {ing.nombre}
+                        {ing.es_alergeno && (
+                          <span title="Alérgeno" aria-label="Alérgeno" className="text-amber-400">🌾</span>
+                        )}
+                      </div>
                       {ing.descripcion && <div className="text-xs text-slate-500">{ing.descripcion}</div>}
                     </td>
-                    <td className="py-3 text-brand-400 font-medium">${(ing.precio_unitario ?? 0).toFixed(2)}</td>
                     <td className="py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         (ing.stock_disponible ?? 0) > 0 ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'
@@ -238,14 +254,9 @@ export default function IngredientesPage() {
                         {ing.stock_disponible ?? 0} {getUnidadSimbolo(ing.unidad_medida_id)}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-300">{getUnidadSimbolo(ing.unidad_medida_id)}</td>
+                    <td className="py-3 text-right font-bold text-slate-100">${(ing.precio_unitario ?? 0).toFixed(2)}</td>
                     <td className="py-3">
-                      {ing.es_alergeno
-                        ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-900/40 text-red-300">Alérgeno</span>
-                        : <span className="text-slate-500 text-xs">—</span>}
-                    </td>
-                    <td className="py-3">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 justify-end">
                         <button onClick={() => { setEditing(ing); setMutError(null); setModalOpen(true) }}
                           className="btn-secondary py-1 px-3">Editar</button>
                         <button onClick={() => { if (confirm('¿Eliminar?')) deleteMut.mutate(ing.id) }}
@@ -257,7 +268,7 @@ export default function IngredientesPage() {
                 {/* Skeletons mientras recarga con paginación */}
                 {isFetching && ingredientes.length > 0 && (
                   <tr>
-                    <td colSpan={6} className="py-4 text-center">
+                    <td colSpan={4} className="py-4 text-center">
                       <div className="inline-flex items-center gap-2 text-slate-400 text-sm">
                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />

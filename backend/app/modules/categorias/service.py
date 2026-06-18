@@ -50,6 +50,8 @@ def get_arbol(uow: UnitOfWork) -> List[CategoriaConHijosRead]:
             descripcion=cat.descripcion,
             parent_id=cat.parent_id,
             imagen_url=cat.imagen_url,
+            icono=cat.icono,
+            color=cat.color,
             subcategorias=[build(h) for h in hijos.get(cat.id, [])],
         )
 
@@ -66,6 +68,8 @@ def create(uow: UnitOfWork, data: CategoriaCreate) -> Categoria:
         descripcion=data.descripcion,
         parent_id=data.parent_id,
         imagen_url=data.imagen_url,
+        icono=data.icono,
+        color=data.color,
     )
     uow.categorias.add(categoria)
     uow.flush()

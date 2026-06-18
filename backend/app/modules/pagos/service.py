@@ -15,15 +15,12 @@ from uuid import uuid4
 import mercadopago
 from fastapi import HTTPException, status
 
+from app.core.config import settings
 from app.core.mercado_pago_cliente import get_sdk
 from app.modules.pagos.pago import Pago
 from app.modules.pedidos.historial_estado_pedido import HistorialEstadoPedido
 from app.schemas.pago_schema import CrearPagoRequest
 from app.unit_of_work import UnitOfWork
-
-
-# URL de la tienda para las back_urls de Checkout PRO (a dónde vuelve el cliente).
-FRONT_URL = "http://localhost:5174"
 
 
 def crear_preferencia(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
@@ -50,16 +47,19 @@ def crear_preferencia(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
         }
         for d in pedido.detalles
     ]
+    front_url = settings.FRONT_URL or "http://localhost:5173"
     preference_data = {
-    "items": items,
-    "external_reference": external_reference,
-    "back_urls": {
-        "success": f"{FRONT_URL}/pedidos/{pedido.id}",
-        "failure": f"{FRONT_URL}/pedidos/{pedido.id}",
-        "pending": f"{FRONT_URL}/pedidos/{pedido.id}",
-    },
-    "notification_url": "https://zombie-unify-gothic.ngrok-free.dev/api/v1/pagos/webhook",  # ← esto
-}
+        "items": items,
+        "external_reference": external_reference,
+        "back_urls": {
+            "success": f"{front_url}/pedidos/{pedido.id}",
+            "failure": f"{front_url}/pedidos/{pedido.id}",
+            "pending": f"{front_url}/pedidos/{pedido.id}",
+        },
+    }
+    # Webhook IPN: solo si hay una URL pública configurada (ngrok) en el .env.
+    if settings.MP_NOTIFICATION_URL:
+        preference_data["notification_url"] = settings.MP_NOTIFICATION_URL
 
     try:
         result = get_sdk().preference().create(preference_data)
@@ -265,6 +265,23 @@ def procesar_webhook(uow: UnitOfWork, payment_id: str) -> Optional[int]:
 
     uow.flush()
     return pago.pedido_id
+
+
+def procesar_merchant_order(uow: UnitOfWork, merchant_order_id: str) -> Optional[int]:
+    """
+    Checkout PRO notifica con topic=merchant_order. La merchant order contiene
+    la lista de pagos; buscamos uno aprobado y lo procesamos como un pago normal.
+    """
+    try:
+        result = get_sdk().merchant_order().get(merchant_order_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error consultando la merchant order en MercadoPago: {e}")
+
+    resp = result.get("response", {}) or {}
+    for p in (resp.get("payments") or []):
+        if p.get("status") == "approved" and p.get("id"):
+            return procesar_webhook(uow, str(p["id"]))
+    return None
 
 
 def get_pago_por_pedido(uow: UnitOfWork, pedido_id: int, usuario_id: int, roles: list[str]) -> Pago:

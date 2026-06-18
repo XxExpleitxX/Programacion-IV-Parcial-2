@@ -4,7 +4,10 @@ from datetime import datetime
 from fastapi import HTTPException
 from app.modules.productos.producto import Producto
 from app.modules.productos.producto_categoria import ProductoCategoria
-from app.schemas import ProductoCreate, ProductoUpdate, ProductoRead, CategoriaRead
+from app.schemas import (
+    ProductoCreate, ProductoUpdate, ProductoRead, CategoriaRead,
+    IngredienteCantidad, IngredienteEnProducto,
+)
 from app.schemas.pagination import paginate
 from app.modules.uploads.service import borrar_por_url
 from app.unit_of_work import UnitOfWork
@@ -22,6 +25,17 @@ def _build_read(producto: Producto) -> ProductoRead:
         for pc in producto.producto_categorias
         if pc.categoria
     ]
+    ingredientes = [
+        IngredienteEnProducto(
+            ingrediente_id=pi.ingrediente_id,
+            nombre=pi.ingrediente.nombre if pi.ingrediente else "",
+            cantidad=pi.cantidad,
+            unidad=pi.unidad_medida.simbolo if getattr(pi, "unidad_medida", None) else None,
+            es_alergeno=pi.ingrediente.es_alergeno if pi.ingrediente else False,
+        )
+        for pi in producto.producto_ingredientes
+        if pi.ingrediente
+    ]
     return ProductoRead(
         id=producto.id,
         nombre=producto.nombre,
@@ -32,7 +46,26 @@ def _build_read(producto: Producto) -> ProductoRead:
         unidad_venta_id=producto.unidad_venta_id,
         es_manufacturado=producto.es_manufacturado,
         categorias=categorias,
+        ingredientes=ingredientes,
         imagenes_url=producto.imagenes_url or [],
+    )
+
+
+def _agregar_ingrediente(uow: UnitOfWork, producto_id: int, item: IngredienteCantidad) -> None:
+    """Asocia un ingrediente (con su cantidad) a la RECETA del producto.
+
+    No toca el stock del ingrediente: la receta es solo una plantilla. El stock
+    de insumos se descuenta al CREAR un pedido y se restaura al cancelarlo
+    (ver PedidoService._ajustar_stock).
+    """
+    ingrediente = uow.ingredientes.get_by_id(item.ingrediente_id)
+    if not ingrediente:
+        raise HTTPException(status_code=404, detail=f"Ingrediente {item.ingrediente_id} no encontrado")
+    cant = float(item.cantidad)
+    if cant <= 0:
+        raise HTTPException(status_code=422, detail="La cantidad de cada ingrediente debe ser mayor a 0")
+    uow.productos.add_ingrediente(
+        producto_id, ingrediente.id, cant, unidad_medida_id=ingrediente.unidad_medida_id
     )
 
 
@@ -104,7 +137,7 @@ def calcular_precio_sugerido(uow: UnitOfWork, producto_id: int, margen: float) -
 
 def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
     # Validación: manufacturado requiere al menos un ingrediente
-    if data.es_manufacturado and not data.ingrediente_ids:
+    if data.es_manufacturado and not data.ingredientes:
         raise HTTPException(
             status_code=422,
             detail="Debe cargar un ingrediente para guardarlo"
@@ -128,9 +161,9 @@ def create(uow: UnitOfWork, data: ProductoCreate) -> ProductoRead:
             raise HTTPException(status_code=404, detail=f"Categoría {cat_id} no encontrada")
         uow.productos.add_categoria(producto.id, cat_id)
 
-    if hasattr(data, 'ingrediente_ids') and data.ingrediente_ids:
-        for ing_id in data.ingrediente_ids:
-            uow.productos.add_ingrediente(producto.id, ing_id, 1.0)
+    # Receta: asocia cada ingrediente con su cantidad y descuenta su stock.
+    for item in data.ingredientes:
+        _agregar_ingrediente(uow, producto.id, item)
 
     uow.flush()
     uow.refresh(producto)
@@ -161,13 +194,14 @@ def update(uow: UnitOfWork, producto_id: int, data: ProductoUpdate) -> ProductoR
                 raise HTTPException(status_code=404, detail=f"Categoría {cat_id} no encontrada")
             uow.productos.add_categoria(producto_id, cat_id)
 
-    # Ingredientes: si vienen, reemplazan los actuales (igual que en create)
-    if data.ingrediente_ids is not None:
+    # Ingredientes: si vienen, reemplazan la receta actual. Editar la receta NO
+    # mueve stock de insumos (es solo una plantilla para futuros pedidos).
+    if data.ingredientes is not None:
         uow.productos.clear_ingredientes(producto)
         uow.flush()
         uow.refresh(producto)
-        for ing_id in data.ingrediente_ids:
-            uow.productos.add_ingrediente(producto_id, ing_id, 1.0)
+        for item in data.ingredientes:
+            _agregar_ingrediente(uow, producto_id, item)
         uow.flush()
         uow.refresh(producto)
 

@@ -13,6 +13,8 @@ export interface Categoria {
   nombre: string
   descripcion: string | null
   parent_id: number | null
+  icono?: string | null
+  color?: string | null
   subcategorias?: Categoria[]
 }
 

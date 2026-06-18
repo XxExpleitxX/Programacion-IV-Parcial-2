@@ -17,7 +17,8 @@ from app.schemas.pago_schema import (
     PreferenciaRequest, PreferenciaResponse, ConfirmarPagoRequest,
 )
 from app.modules.pagos.service import (
-    crear_pago, crear_preferencia, verificar_pago, procesar_webhook, get_pago_por_pedido,
+    crear_pago, crear_preferencia, verificar_pago,
+    procesar_webhook, procesar_merchant_order, get_pago_por_pedido,
 )
 from app.unit_of_work import UnitOfWork, get_uow
 
@@ -72,17 +73,24 @@ async def webhook(request: Request, uow: UoWDep):
     except Exception:
         body = {}
 
-    # Formato body: { "type": "payment", "data": { "id": "123" } }
-    if body.get("type") == "payment":
-        payment_id = (body.get("data") or {}).get("id")
-    # Formato query: ?topic=payment&id=123  (o ?type=payment&data.id=123)
-    if not payment_id:
-        qp = request.query_params
-        if qp.get("topic") == "payment" or qp.get("type") == "payment":
-            payment_id = qp.get("id") or qp.get("data.id")
+    qp = request.query_params
+    topic = qp.get("topic") or qp.get("type") or body.get("topic") or body.get("type")
 
-    if payment_id:
-        procesar_webhook(uow, str(payment_id))
+    # 1) Notificación de PAGO directa: { "type": "payment", "data": { "id": "123" } }
+    if topic == "payment":
+        payment_id = (body.get("data") or {}).get("id") or qp.get("id") or qp.get("data.id")
+        if payment_id:
+            procesar_webhook(uow, str(payment_id))
+        return {"status": "ok"}
+
+    # 2) Notificación de MERCHANT_ORDER (Checkout PRO): adentro vienen los pagos.
+    if topic == "merchant_order":
+        mo_id = qp.get("id")
+        if not mo_id:
+            resource = body.get("resource", "") or ""   # ej: ".../merchant_orders/123"
+            mo_id = resource.rstrip("/").split("/")[-1] if resource else None
+        if mo_id:
+            procesar_merchant_order(uow, str(mo_id))
 
     return {"status": "ok"}
 

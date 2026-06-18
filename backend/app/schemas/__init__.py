@@ -11,6 +11,8 @@ class CategoriaCreate(BaseModel):
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
     imagen_url: Optional[str] = None       # URL de Cloudinary
+    icono: Optional[str] = None            # emoji de la sección
+    color: Optional[str] = None            # color del badge
 
     @field_validator("nombre")
     @classmethod
@@ -25,6 +27,8 @@ class CategoriaUpdate(BaseModel):
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
     imagen_url: Optional[str] = None       # URL de Cloudinary
+    icono: Optional[str] = None
+    color: Optional[str] = None
 
 
 class CategoriaRead(BaseModel):
@@ -33,6 +37,8 @@ class CategoriaRead(BaseModel):
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
     imagen_url: Optional[str] = None
+    icono: Optional[str] = None
+    color: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -87,6 +93,21 @@ class IngredienteRead(BaseModel):
 # ─────────────────────────────────────────────
 # PRODUCTO
 # ─────────────────────────────────────────────
+class IngredienteCantidad(BaseModel):
+    """Un ingrediente de la receta con su cantidad (maestro-detalle)."""
+    ingrediente_id: int
+    cantidad: float = 1.0
+
+
+class IngredienteEnProducto(BaseModel):
+    """Ingrediente de un producto manufacturado, para precargar al editar."""
+    ingrediente_id: int
+    nombre: str
+    cantidad: float
+    unidad: Optional[str] = None
+    es_alergeno: bool = False
+
+
 class ProductoCreate(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
@@ -96,7 +117,7 @@ class ProductoCreate(BaseModel):
     unidad_venta_id: Optional[int] = None
     categoria_ids: List[int] = []
     es_manufacturado: bool = False
-    ingrediente_ids: List[int] = []
+    ingredientes: List[IngredienteCantidad] = []   # receta: ingrediente + cantidad
     imagenes_url: List[str] = []          # URLs de Cloudinary
 
     @field_validator("nombre")
@@ -123,7 +144,7 @@ class ProductoUpdate(BaseModel):
     unidad_venta_id: Optional[int] = None
     categoria_ids: Optional[List[int]] = None
     es_manufacturado: Optional[bool] = None
-    ingrediente_ids: Optional[List[int]] = None
+    ingredientes: Optional[List[IngredienteCantidad]] = None
     imagenes_url: Optional[List[str]] = None
 
 
@@ -137,6 +158,7 @@ class ProductoRead(BaseModel):
     unidad_venta_id: Optional[int] = None
     categorias: List[CategoriaRead] = []
     es_manufacturado: bool = False
+    ingredientes: List[IngredienteEnProducto] = []
     imagenes_url: List[str] = []
 
     model_config = {"from_attributes": True}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { productosApi, categoriasApi, unidadesApi, ingredientesApi, uploadsApi } from '../../shared/api'
@@ -27,6 +27,16 @@ interface FormProps {
   error: string | null
 }
 
+// Tarjeta contenedora reutilizable para agrupar secciones del formulario.
+function SeccionCard({ titulo, children, className = '' }: { titulo: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-card border border-border rounded-xl p-4 ${className}`}>
+      <h3 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">{titulo}</h3>
+      {children}
+    </div>
+  )
+}
+
 function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, error }: FormProps) {
   const [nombre, setNombre] = useState(initial?.nombre ?? '')
   const [descripcion, setDescripcion] = useState(initial?.descripcion ?? '')
@@ -40,21 +50,32 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
   const [subiendo, setSubiendo] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [validacionError, setValidacionError] = useState<string | null>(null)
+  const [intentoSubmit, setIntentoSubmit] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const DESC_MAX = 280
+
+  const subirArchivos = async (files: File[]) => {
+    const validos = files.filter(f => ['image/jpeg', 'image/png', 'image/webp'].includes(f.type))
+    if (validos.length === 0) return
     setUploadError(null)
     setSubiendo(true)
     try {
-      const { secure_url } = await uploadsApi.subir(file, 'productos')
-      setImagenesUrl(prev => [...prev, secure_url])
+      for (const file of validos) {
+        const { secure_url } = await uploadsApi.subir(file, 'productos')
+        setImagenesUrl(prev => [...prev, secure_url])
+      }
     } catch (err) {
       setUploadError(getApiErrorMessage(err, 'Error al subir la imagen'))
     } finally {
       setSubiendo(false)
-      e.target.value = ''   // permite volver a subir el mismo archivo
     }
+  }
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) await subirArchivos(Array.from(e.target.files))
+    e.target.value = ''   // permite volver a subir el mismo archivo
   }
 
   // Borra la imagen del CDN (DELETE /uploads/imagen/{public_id}) y la saca del form.
@@ -69,66 +90,101 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       setUploadError(getApiErrorMessage(err, 'No se pudo borrar la imagen del CDN'))
     }
   }
- 
+
+  // Mueve la imagen al frente del array → se usa como principal (imagenes_url[0]).
+  const marcarPrincipal = (url: string) =>
+    setImagenesUrl(prev => [url, ...prev.filter(u => u !== url)])
+
   // Calculadora integrada
   const [costoOperativo, setCostoOperativo] = useState('0')
   const [margen, setMargen] = useState(30)
- 
+
   const { data: ingredientesDisponibles = [] } = useQuery({
     queryKey: ['ingredientes'],
     queryFn: () => ingredientesApi.getAll(),
   })
   const [ingredientesSeleccionados, setIngredientesSeleccionados] = useState<IngredienteConCantidad[]>([])
   const [busquedaIng, setBusquedaIng] = useState('')
-  const ingredientesFiltrados = busquedaIng.trim()
-    ? ingredientesDisponibles.filter(i => i.nombre.toLowerCase().includes(busquedaIng.trim().toLowerCase()))
-    : ingredientesDisponibles
- 
+  // Sugerencias: ingredientes que coinciden con la búsqueda y aún NO están en la receta.
+  const sugerencias = busquedaIng.trim()
+    ? ingredientesDisponibles.filter(i =>
+        i.nombre.toLowerCase().includes(busquedaIng.trim().toLowerCase()) &&
+        !ingredientesSeleccionados.some(s => s.ingrediente.id === i.id))
+    : []
+
+  // Precarga la receta al EDITAR un manufacturado (una sola vez, cuando cargan los ingredientes).
+  const precargado = useRef(false)
+  useEffect(() => {
+    if (precargado.current) return
+    if (initial?.ingredientes?.length && ingredientesDisponibles.length) {
+      const pre = initial.ingredientes
+        .map(ie => {
+          const full = ingredientesDisponibles.find(d => d.id === ie.ingrediente_id)
+          return full ? { ingrediente: full, cantidad: ie.cantidad } : null
+        })
+        .filter((x): x is IngredienteConCantidad => x !== null)
+      setIngredientesSeleccionados(pre)
+      precargado.current = true
+    }
+  }, [initial, ingredientesDisponibles])
+
   // Cálculo automático en tiempo real
   const costoIngredientes = ingredientesSeleccionados.reduce((sum, { ingrediente, cantidad }) => {
     return sum + (ingrediente.precio_unitario ?? 0) * cantidad
   }, 0)
-  const costoTotal = costoIngredientes + Number(costoOperativo)
+  const costoTotal = costoIngredientes + Number(costoOperativo || 0)
   const precioSugerido = costoTotal * (1 + margen / 100)
- 
+  const gananciaEstimada = Number(precioBase || 0) - costoTotal
+
   const aplanar = (cats: Categoria[], nivel = 0): { cat: Categoria; nivel: number }[] =>
     cats.flatMap(c => [{ cat: c, nivel }, ...aplanar(c.subcategorias ?? [], nivel + 1)])
   const opcionesCats = aplanar(categorias)
- 
+  const [busquedaCat, setBusquedaCat] = useState('')
+  const catsFiltradas = busquedaCat.trim()
+    ? opcionesCats.filter(({ cat }) => cat.nombre.toLowerCase().includes(busquedaCat.trim().toLowerCase()))
+    : opcionesCats
+  const catsSeleccionadas = opcionesCats.filter(({ cat }) => categoriaIds.includes(cat.id)).map(o => o.cat)
+
   const toggleCategoria = (id: number) => {
     setCategoriaIds(prev => toggleCategoriaConCascada(id, categorias, prev))
   }
- 
-  const toggleIngrediente = (ing: Ingrediente) => {
-    setIngredientesSeleccionados(prev => {
-      const existe = prev.find(i => i.ingrediente.id === ing.id)
-      if (existe) return prev.filter(i => i.ingrediente.id !== ing.id)
-      return [...prev, { ingrediente: ing, cantidad: 1 }]
-    })
+
+  const agregarIngrediente = (ing: Ingrediente) => {
+    setIngredientesSeleccionados(prev =>
+      prev.some(i => i.ingrediente.id === ing.id) ? prev : [...prev, { ingrediente: ing, cantidad: 1 }]
+    )
+    setBusquedaIng('')
   }
- 
+
+  const quitarIngrediente = (id: number) =>
+    setIngredientesSeleccionados(prev => prev.filter(i => i.ingrediente.id !== id))
+
   const setCantidad = (ingredienteId: number, cantidad: number) => {
     setIngredientesSeleccionados(prev =>
       prev.map(i => i.ingrediente.id === ingredienteId ? { ...i, cantidad } : i)
     )
   }
- 
+
   const getUnidadSimbolo = (id: number | null | undefined) =>
     id ? unidades.find(u => u.id === id)?.simbolo ?? '' : ''
- 
-  const aplicarPrecioSugerido = () => {
-    setPrecioBase(precioSugerido.toFixed(2))
-  }
- 
+
+  const aplicarPrecioSugerido = () => setPrecioBase(precioSugerido.toFixed(2))
+
+  // Validación visual
+  const nombreInvalido = intentoSubmit && nombre.trim().length < 2
+  const precioInvalido = intentoSubmit && (!precioBase || Number(precioBase) <= 0)
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setIntentoSubmit(true)
     setValidacionError(null)
- 
+
+    if (nombre.trim().length < 2 || !precioBase || Number(precioBase) <= 0) return
     if (esManufacturado && ingredientesSeleccionados.length === 0) {
-      setValidacionError('Debe cargar un ingrediente para guardarlo')
+      setValidacionError('Debe cargar al menos un ingrediente')
       return
     }
- 
+
     onSubmit({
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
@@ -138,244 +194,383 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
       unidad_venta_id: unidadVentaId,
       es_manufacturado: esManufacturado,
       categoria_ids: categoriaIds,
-      ingrediente_ids: esManufacturado ? ingredientesSeleccionados.map(i => i.ingrediente.id) : [],
+      ingredientes: esManufacturado
+        ? ingredientesSeleccionados.map(i => ({ ingrediente_id: i.ingrediente.id, cantidad: i.cantidad }))
+        : [],
       imagenes_url: imagenesUrl,
     })
   }
- 
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <label className="block text-xs font-medium text-slate-400 mb-1">Nombre *</label>
-          <input className="input-field" value={nombre} onChange={e => setNombre(e.target.value)} required minLength={2} />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-xs font-medium text-slate-400 mb-1">Descripción</label>
-          <textarea className="input-field resize-none" rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Precio base *</label>
-          <input className="input-field" type="number" min="0" step="0.01" value={precioBase}
-            onChange={e => setPrecioBase(e.target.value)} required />
-        </div>
- 
-        {!esManufacturado && (
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Stock</label>
-            <input className="input-field" type="number" min="0" value={stockCantidad}
-              onChange={e => setStockCantidad(e.target.value)} />
-          </div>
-        )}
- 
-        <div className="col-span-2">
-          <label className="block text-xs font-medium text-slate-400 mb-1">Unidad de venta</label>
-          <select className="input-field" value={unidadVentaId ?? ''} onChange={e => setUnidadVentaId(e.target.value ? Number(e.target.value) : null)}>
-            <option value="">— Sin unidad (por pieza) —</option>
-            {unidades.map(u => (
-              <option key={u.id} value={u.id}>{u.nombre} ({u.simbolo})</option>
-            ))}
-          </select>
-        </div>
- 
-        <div className="flex items-center gap-2">
-          <input type="checkbox" checked={disponible} onChange={e => setDisponible(e.target.checked)} className="w-4 h-4 accent-brand-600" />
-          <span className="text-sm text-slate-300">Disponible</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" checked={esManufacturado}
-            onChange={e => { setEsManufacturado(e.target.checked); setValidacionError(null); setIngredientesSeleccionados([]) }}
-            className="w-4 h-4 accent-brand-600" />
-          <span className="text-sm text-slate-300">Es manufacturado</span>
-        </div>
-      </div>
- 
-      {/* ── Sección manufacturado ── */}
-      {esManufacturado && (
-        <>
-          {/* Lista de ingredientes */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
-              Ingredientes * <span className="text-slate-500">(al menos uno)</span>
-            </label>
-            <input
-              className="input-field mb-2"
-              placeholder="🔍 Buscar ingrediente..."
-              value={busquedaIng}
-              onChange={e => setBusquedaIng(e.target.value)}
-            />
-            <div className="border border-border rounded-lg p-3 max-h-36 overflow-y-auto space-y-1 mb-3">
-              {ingredientesDisponibles.length === 0
-                ? <p className="text-slate-500 text-xs">No hay ingredientes cargados</p>
-                : ingredientesFiltrados.length === 0
-                ? <p className="text-slate-500 text-xs">Sin resultados para "{busquedaIng}"</p>
-                : ingredientesFiltrados.map(ing => {
-                  const seleccionado = ingredientesSeleccionados.some(i => i.ingrediente.id === ing.id)
-                  return (
-                    <label key={ing.id} className={`flex items-center gap-2 cursor-pointer rounded px-2 py-1 transition-colors ${
-                      seleccionado ? 'bg-brand-900/30' : 'hover:bg-surface/50'
-                    }`}>
-                      <input type="checkbox" checked={seleccionado}
-                        onChange={() => toggleIngrediente(ing)} className="w-3.5 h-3.5 accent-brand-600" />
-                      <span className="text-sm text-slate-300 flex-1">{ing.nombre}</span>
-                      <span className="text-xs text-slate-500">
-                        ${ing.precio_unitario?.toFixed(2)} / {getUnidadSimbolo(ing.unidad_medida_id) || 'u'}
-                      </span>
-                      {ing.es_alergeno && (
-                        <span className="text-xs bg-red-900/40 text-red-300 px-1.5 rounded">Alérgeno</span>
-                      )}
-                    </label>
-                  )
-                })
-              }
-            </div>
- 
-            {/* Cantidades por ingrediente */}
-            {ingredientesSeleccionados.length > 0 && (
-              <div className="space-y-2 mb-3">
-                <p className="text-xs font-medium text-slate-400">Cantidad por unidad de producto:</p>
-                {ingredientesSeleccionados.map(({ ingrediente, cantidad }) => {
-                  const simbolo = getUnidadSimbolo(ingrediente.unidad_medida_id)
-                  const subtotal = (ingrediente.precio_unitario ?? 0) * cantidad
-                  return (
-                    <div key={ingrediente.id} className="flex items-center gap-3 bg-surface rounded-lg px-3 py-2">
-                      <span className="text-sm text-slate-200 flex-1">{ingrediente.nombre}</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number" min="0.001" step="0.001" value={cantidad}
-                          onChange={e => setCantidad(ingrediente.id, Number(e.target.value))}
-                          className="input-field w-24 text-right text-sm py-1"
-                        />
-                        <span className="text-xs text-slate-400 w-8">{simbolo || 'u'}</span>
-                      </div>
-                      <span className="text-xs text-brand-400 font-medium w-20 text-right">
-                        = ${subtotal.toFixed(2)}
-                      </span>
-                      <button type="button" onClick={() => toggleIngrediente(ingrediente)}
-                        className="text-red-400 hover:text-red-300 text-xs">✕</button>
-                    </div>
-                  )
-                })}
+    <form onSubmit={handleSubmit} className="max-h-[80vh] overflow-y-auto pr-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* ─────────── Columna izquierda (70%) ─────────── */}
+        <div className="lg:col-span-2 space-y-4">
+
+          {/* Información básica */}
+          <SeccionCard titulo="📝 Información básica">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Nombre del producto *</label>
+                <input
+                  className={`input-field text-base ${nombreInvalido ? 'border-red-500/70 focus:border-red-500' : ''}`}
+                  value={nombre} onChange={e => setNombre(e.target.value)}
+                  placeholder="Ej: Pizza Margarita" />
+                {nombreInvalido && <p className="text-red-400 text-xs mt-1">Ingresá un nombre (mín. 2 caracteres)</p>}
               </div>
-            )}
-          </div>
- 
-          {/* ── Calculadora integrada ── */}
-          <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">💰 Calculadora de precio</p>
- 
-            {/* Detalle de costos */}
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-slate-400">
-                <span>Costo ingredientes:</span>
-                <span className="text-slate-200">${costoIngredientes.toFixed(2)}</span>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs font-medium text-slate-400">Descripción</label>
+                  <span className={`text-xs ${descripcion.length > DESC_MAX ? 'text-red-400' : 'text-slate-500'}`}>
+                    {descripcion.length}/{DESC_MAX}
+                  </span>
+                </div>
+                <textarea className="input-field resize-none" rows={2} maxLength={DESC_MAX}
+                  value={descripcion} onChange={e => setDescripcion(e.target.value)}
+                  placeholder="Descripción opcional del producto…" />
               </div>
-              <div className="flex justify-between items-center text-slate-400">
-                <span>Costos operativos (alquiler, gas, etc.):</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500">$</span>
-                  <input
-                    type="number" min="0" step="0.01" value={costoOperativo}
-                    onChange={e => setCostoOperativo(e.target.value)}
-                    className="w-24 bg-card border border-border rounded px-2 py-0.5 text-white text-sm text-right focus:outline-none focus:border-brand-500"
-                  />
+
+              {/* Tipo de producto */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Tipo de producto</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { val: false, label: '📦 Terminado', desc: 'Stock propio' },
+                    { val: true, label: '👨‍🍳 Manufacturado', desc: 'Receta de ingredientes' },
+                  ] as const).map(opt => (
+                    <button key={String(opt.val)} type="button"
+                      onClick={() => {
+                        setEsManufacturado(opt.val)
+                        setValidacionError(null)
+                        if (!opt.val) setIngredientesSeleccionados([])
+                      }}
+                      className={`text-left px-3 py-2 rounded-lg border transition-colors ${
+                        esManufacturado === opt.val
+                          ? 'border-brand-500 bg-brand-900/30 text-slate-100'
+                          : 'border-border bg-surface text-slate-400 hover:border-slate-600'
+                      }`}>
+                      <div className="text-sm font-medium">{opt.label}</div>
+                      <div className="text-xs opacity-70">{opt.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex justify-between text-slate-300 border-t border-border pt-1">
-                <span>Costo total:</span>
-                <span className="font-medium">${costoTotal.toFixed(2)}</span>
-              </div>
+
+              {/* Stock + unidad solo para terminado */}
+              {!esManufacturado && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Stock inicial</label>
+                    <input className="input-field" type="number" min="0" value={stockCantidad}
+                      onChange={e => setStockCantidad(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Unidad de medida</label>
+                    <select className="input-field" value={unidadVentaId ?? ''}
+                      onChange={e => setUnidadVentaId(e.target.value ? Number(e.target.value) : null)}>
+                      <option value="">— Por pieza —</option>
+                      {unidades.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.simbolo})</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+              {esManufacturado && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Unidad de venta</label>
+                  <select className="input-field" value={unidadVentaId ?? ''}
+                    onChange={e => setUnidadVentaId(e.target.value ? Number(e.target.value) : null)}>
+                    <option value="">— Por pieza —</option>
+                    {unidades.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.simbolo})</option>)}
+                  </select>
+                </div>
+              )}
             </div>
- 
-            {/* Margen */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-xs text-slate-400">Margen de ganancia</label>
-                <span className="text-brand-400 font-bold text-sm">{margen}%</span>
+          </SeccionCard>
+
+          {/* Receta / Constructor de ingredientes (solo manufacturado) */}
+          {esManufacturado && (
+            <SeccionCard titulo="🥘 Receta">
+              {/* Buscador con autocompletado */}
+              <div className="relative mb-3">
+                <input
+                  className="input-field"
+                  placeholder="🔍 Buscar ingrediente para agregar…"
+                  value={busquedaIng}
+                  onChange={e => setBusquedaIng(e.target.value)}
+                />
+                {sugerencias.length > 0 && (
+                  <div className="absolute z-10 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    {sugerencias.map(ing => (
+                      <button key={ing.id} type="button" onClick={() => agregarIngrediente(ing)}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-brand-900/30 transition-colors">
+                        <span className="text-sm text-slate-200 flex items-center gap-1.5">
+                          {ing.nombre}
+                          {ing.es_alergeno && <span title="Alérgeno" className="text-amber-400">🌾</span>}
+                        </span>
+                        <span className="text-xs text-slate-500 shrink-0">
+                          ${(ing.precio_unitario ?? 0).toFixed(2)} / {getUnidadSimbolo(ing.unidad_medida_id) || 'u'}
+                          <span className="ml-2 text-brand-400">+ Agregar</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {ingredientesDisponibles.length === 0 && (
+                  <p className="text-slate-500 text-xs mt-1">No hay ingredientes cargados.</p>
+                )}
               </div>
-              <div className="flex items-center gap-3">
-                <input type="range" min="0" max="300" value={margen}
-                  onChange={e => setMargen(Number(e.target.value))}
-                  className="flex-1 accent-brand-600" />
-                <input type="number" min="0" max="1000" value={margen}
-                  onChange={e => setMargen(Number(e.target.value))}
-                  className="w-16 bg-card border border-border rounded px-2 py-0.5 text-white text-sm text-center focus:outline-none focus:border-brand-500" />
-              </div>
-            </div>
- 
-            {/* Precio sugerido + botón aplicar */}
-            <div className="flex items-center justify-between bg-brand-900/20 border border-brand-800/50 rounded-lg px-4 py-3">
-              <div>
-                <p className="text-xs text-slate-400">Precio sugerido de venta</p>
-                <p className="text-2xl font-bold text-brand-400">${precioSugerido.toFixed(2)}</p>
-              </div>
-              <button
-                type="button"
-                onClick={aplicarPrecioSugerido}
-                className="btn-primary py-2 px-4 text-sm"
-              >
-                Usar este precio →
-              </button>
-            </div>
-          </div>
- 
-          {validacionError && (
-            <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">
-              ⚠️ {validacionError}
-            </p>
+
+              {/* Tabla de ingredientes de la receta */}
+              {ingredientesSeleccionados.length === 0 ? (
+                <p className="text-slate-500 text-sm text-center py-4 border border-dashed border-border rounded-lg">
+                  Buscá y agregá ingredientes para armar la receta.
+                </p>
+              ) : (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-surface text-left text-xs text-slate-400 uppercase tracking-wider">
+                        <th className="py-2 px-3 font-semibold">Ingrediente</th>
+                        <th className="py-2 px-2 font-semibold">Cantidad</th>
+                        <th className="py-2 px-2 font-semibold text-right">Costo</th>
+                        <th className="py-2 px-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {ingredientesSeleccionados.map(({ ingrediente, cantidad }) => {
+                        const simbolo = getUnidadSimbolo(ingrediente.unidad_medida_id) || 'u'
+                        const subtotal = (ingrediente.precio_unitario ?? 0) * cantidad
+                        return (
+                          <tr key={ingrediente.id}>
+                            <td className="py-2 px-3 text-slate-200 flex items-center gap-1.5">
+                              {ingrediente.nombre}
+                              {ingrediente.es_alergeno && <span title="Alérgeno" className="text-amber-400">🌾</span>}
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex items-center gap-1.5">
+                                <input type="number" min="0.001" step="0.001" value={cantidad}
+                                  onChange={e => setCantidad(ingrediente.id, Number(e.target.value))}
+                                  className="input-field w-20 text-right text-sm py-1" />
+                                <span className="text-xs text-slate-400 w-7">{simbolo}</span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-right text-brand-400 font-medium">${subtotal.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right">
+                              <button type="button" onClick={() => quitarIngrediente(ingrediente.id)}
+                                title="Quitar" className="text-red-400 hover:text-red-300">🗑️</button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-surface border-t border-border">
+                        <td className="py-2 px-3 text-xs font-semibold text-slate-400 uppercase" colSpan={2}>Total receta</td>
+                        <td className="py-2 px-2 text-right font-bold text-slate-100" colSpan={2}>${costoIngredientes.toFixed(2)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+              {validacionError && (
+                <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg mt-3">⚠️ {validacionError}</p>
+              )}
+            </SeccionCard>
           )}
-        </>
-      )}
- 
-      {/* Imágenes (Cloudinary) */}
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-2">Imágenes (Cloudinary)</label>
-        {imagenesUrl.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {imagenesUrl.map(url => (
-              <div key={url} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                <img src={cldThumb(url, 'f_auto,q_auto,c_fill,w_160,h_160')} alt="" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => quitarImagen(url)}
-                  className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-5 h-5 text-xs leading-none flex items-center justify-center">
-                  ×
+
+          {/* Categorías */}
+          <SeccionCard titulo="🏷️ Categorías">
+            {catsSeleccionadas.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {catsSeleccionadas.map(c => (
+                  <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-900/50 text-brand-200 rounded-full text-xs">
+                    {c.nombre}
+                    <button type="button" onClick={() => toggleCategoria(c.id)} className="hover:text-white">✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <input className="input-field mb-2" placeholder="🔍 Filtrar categorías…"
+              value={busquedaCat} onChange={e => setBusquedaCat(e.target.value)} />
+            <div className="border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-0.5">
+              {catsFiltradas.length === 0
+                ? <p className="text-slate-500 text-xs px-2 py-1">Sin coincidencias</p>
+                : catsFiltradas.map(({ cat, nivel }) => (
+                  <label key={cat.id} className="flex items-center gap-2 cursor-pointer hover:bg-surface/50 rounded px-2 py-0.5"
+                    style={{ paddingLeft: `${(busquedaCat ? 0 : nivel * 16) + 8}px` }}>
+                    <input type="checkbox" checked={categoriaIds.includes(cat.id)}
+                      onChange={() => toggleCategoria(cat.id)} className="w-3.5 h-3.5 accent-brand-600" />
+                    <span className="text-sm text-slate-300">{cat.nombre}</span>
+                  </label>
+                ))
+              }
+            </div>
+          </SeccionCard>
+        </div>
+
+        {/* ─────────── Columna derecha (30%) ─────────── */}
+        <div className="lg:col-span-1 space-y-4">
+
+          {/* Calculadora de precios (solo manufacturado) */}
+          {esManufacturado && (
+            <SeccionCard titulo="💰 Calculadora de precio">
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between text-slate-400">
+                  <span>Costo ingredientes</span>
+                  <span className="text-slate-200">${costoIngredientes.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-400">
+                  <span>+ Costos operativos</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-500">$</span>
+                    <input type="number" min="0" step="0.01" value={costoOperativo}
+                      onChange={e => setCostoOperativo(e.target.value)}
+                      className="w-20 bg-surface border border-border rounded px-2 py-0.5 text-white text-sm text-right focus:outline-none focus:border-brand-500" />
+                  </div>
+                </div>
+                <div className="flex justify-between text-slate-200 border-t border-border pt-1.5 font-medium">
+                  <span>= Costo total</span>
+                  <span>${costoTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs text-slate-400">Margen de ganancia</label>
+                  <div className="flex items-center gap-1">
+                    <input type="number" min="0" max="1000" value={margen}
+                      onChange={e => setMargen(Number(e.target.value))}
+                      className="w-14 bg-surface border border-border rounded px-1.5 py-0.5 text-brand-400 font-bold text-sm text-center focus:outline-none focus:border-brand-500" />
+                    <span className="text-brand-400 font-bold text-sm">%</span>
+                  </div>
+                </div>
+                <input type="range" min="0" max="300" value={margen}
+                  onChange={e => setMargen(Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+
+              <div className="flex items-center justify-between bg-brand-900/20 border border-brand-800/50 rounded-lg px-3 py-2.5 mt-3">
+                <div>
+                  <p className="text-xs text-slate-400">Precio sugerido</p>
+                  <p className="text-xl font-bold text-brand-400">${precioSugerido.toFixed(2)}</p>
+                </div>
+                <button type="button" onClick={aplicarPrecioSugerido} className="btn-primary py-1.5 px-3 text-xs">
+                  Usar →
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleFile}
-          disabled={subiendo}
-          className="text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-600 file:text-white file:cursor-pointer hover:file:bg-brand-500"
-        />
-        {subiendo && <p className="text-slate-400 text-xs mt-1">Subiendo a Cloudinary…</p>}
-        {uploadError && <p className="text-red-400 text-xs mt-1">{uploadError}</p>}
-      </div>
+            </SeccionCard>
+          )}
 
-      {/* Categorías */}
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-2">Categorías</label>
-        <div className="border border-border rounded-lg p-3 max-h-40 overflow-y-auto space-y-1">
-          {opcionesCats.map(({ cat, nivel }) => (
-            <label key={cat.id} className="flex items-center gap-2 cursor-pointer hover:bg-surface/50 rounded px-2 py-0.5"
-              style={{ paddingLeft: `${(nivel * 16) + 8}px` }}>
-              <input type="checkbox" checked={categoriaIds.includes(cat.id)}
-                onChange={() => toggleCategoria(cat.id)} className="w-3.5 h-3.5 accent-brand-600" />
-              <span className="text-sm text-slate-300">{cat.nombre}</span>
-            </label>
-          ))}
+          {/* Imágenes con drag & drop */}
+          <SeccionCard titulo="🖼️ Imágenes">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => { e.preventDefault(); setDragOver(false); subirArchivos(Array.from(e.dataTransfer.files)) }}
+              className={`cursor-pointer border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                dragOver ? 'border-brand-500 bg-brand-900/20' : 'border-border hover:border-slate-600'
+              }`}>
+              <div className="text-2xl mb-1">📁</div>
+              <p className="text-xs text-slate-400">Arrastrá imágenes acá o hacé clic</p>
+              <p className="text-[10px] text-slate-600 mt-1">JPG / PNG / WEBP · recomendado 800×800px</p>
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple
+                onChange={handleFile} disabled={subiendo} className="hidden" />
+            </div>
+            {subiendo && <p className="text-slate-400 text-xs mt-2">Subiendo a Cloudinary…</p>}
+            {uploadError && <p className="text-red-400 text-xs mt-2">{uploadError}</p>}
+
+            {imagenesUrl.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {imagenesUrl.map((url, idx) => (
+                  <div key={url} className={`group relative aspect-square rounded-lg overflow-hidden border ${
+                    idx === 0 ? 'border-brand-500' : 'border-border'
+                  }`}>
+                    <img src={cldThumb(url, 'f_auto,q_auto,c_fill,w_160,h_160')} alt="" className="w-full h-full object-cover" />
+                    {idx === 0 && (
+                      <span className="absolute top-0.5 left-0.5 bg-brand-600 text-white text-[10px] px-1 rounded">🌟 Principal</span>
+                    )}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      {idx !== 0 && (
+                        <button type="button" onClick={() => marcarPrincipal(url)} title="Marcar principal"
+                          className="text-white text-sm hover:scale-110">🌟</button>
+                      )}
+                      <button type="button" onClick={() => quitarImagen(url)} title="Eliminar"
+                        className="text-white text-sm hover:scale-110">🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SeccionCard>
+
+          {/* Resumen & Guardar */}
+          <SeccionCard titulo="✅ Resumen" className="lg:sticky lg:top-2">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Precio de venta final *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                  <input type="number" min="0" step="0.01" value={precioBase}
+                    onChange={e => setPrecioBase(e.target.value)}
+                    className={`input-field pl-6 text-lg font-bold ${precioInvalido ? 'border-red-500/70 focus:border-red-500' : ''}`}
+                    placeholder="0.00" />
+                </div>
+                {precioInvalido && <p className="text-red-400 text-xs mt-1">Ingresá un precio mayor a 0</p>}
+              </div>
+
+              {esManufacturado && Number(precioBase) > 0 && (
+                <p className={`text-xs ${gananciaEstimada >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  💰 Ganancia estimada: <span className="font-semibold">${gananciaEstimada.toFixed(2)}</span> por unidad
+                </p>
+              )}
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={disponible} onChange={e => setDisponible(e.target.checked)}
+                  className="w-4 h-4 accent-brand-600" />
+                <span className="text-sm text-slate-300">Disponible para la venta</span>
+              </label>
+
+              {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
+
+              <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2" disabled={isLoading}>
+                {isLoading && (
+                  <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                )}
+                {isLoading ? 'Guardando…' : initial ? 'Actualizar producto' : 'Crear producto'}
+              </button>
+            </div>
+          </SeccionCard>
         </div>
       </div>
- 
-      {error && <p className="text-red-400 text-sm bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="submit" className="btn-primary" disabled={isLoading}>
-          {isLoading ? 'Guardando...' : initial ? 'Actualizar' : 'Crear'}
-        </button>
-      </div>
     </form>
+  )
+}
+
+// ── Helpers visuales ──────────────────────────────────────────────────────
+
+function Thumb({ url, alt, size = 'w-10 h-10' }: { url?: string | null; alt: string; size?: string }) {
+  return url
+    ? <img src={cldThumb(url, 'f_auto,q_auto,c_fill,w_80,h_80')} alt={alt}
+        className={`${size} rounded-lg object-cover border border-border`} />
+    : <div className={`${size} rounded-lg bg-slate-800 flex items-center justify-center text-slate-500`}>🍽️</div>
+}
+
+function SwitchDisponible({ on, disabled, onToggle }: { on: boolean; disabled?: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onToggle}
+      title={on ? 'Disponible — clic para desactivar' : 'Agotado — clic para activar'}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+        on ? 'bg-green-500' : 'bg-slate-600'
+      } ${disabled ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
+    >
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+        on ? 'translate-x-[18px]' : 'translate-x-0.5'
+      }`} />
+    </button>
   )
 }
 
@@ -393,6 +588,7 @@ export default function ProductosPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
   const [mutError, setMutError] = useState<string | null>(null)
+  const [vista, setVista] = useState<'tabla' | 'tarjetas'>('tabla')
 
   const { data: productos = [], isLoading, isError } = useQuery({
     queryKey: ['productos', search, filtroDisponible, filtroCategoria],
@@ -471,22 +667,34 @@ export default function ProductosPage() {
             <option key={cat.id} value={cat.id}>{'  '.repeat(nivel)}{cat.nombre}</option>
           ))}
         </select>
+        {/* Toggle tabla / tarjetas */}
+        <div className="ml-auto flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
+          {(['tabla', 'tarjetas'] as const).map(v => (
+            <button key={v} onClick={() => setVista(v)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                vista === v ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}>
+              {v === 'tabla' ? '☰ Tabla' : '▦ Tarjetas'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading && <p className="text-slate-400">Cargando...</p>}
       {isError && <p className="text-red-400">Error al cargar los productos.</p>}
       {!isLoading && !isError && (
+        vista === 'tabla' ? (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Descripción</th>
+                <th className="pb-3 w-12"></th>
+                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Producto</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Stock</th>
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Unidad</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Categoría</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tipo</th>
                 <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</th>
-                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
+                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -495,6 +703,7 @@ export default function ProductosPage() {
               )}
               {productos.map(p => (
                 <tr key={p.id} className="hover:bg-surface/50 transition-colors">
+                  <td className="py-3 pr-2"><Thumb url={p.imagenes_url?.[0]} alt={p.nombre} /></td>
                   <td className="py-3">
                     <div className="font-medium text-slate-100">{p.nombre}</div>
                     {p.descripcion && <div className="text-xs text-slate-500 truncate max-w-xs">{p.descripcion}</div>}
@@ -502,13 +711,12 @@ export default function ProductosPage() {
                   </td>
                   <td className="py-3">
                     {p.es_manufacturado
-                      ? <span className="text-slate-500 text-xs italic">En base a insumos</span>
-                      : <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          p.stock_cantidad > 0 ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'
-                        }`}>{p.stock_cantidad ?? 0}</span>
+                      ? <span title="Depende de los ingredientes" className="text-lg cursor-help" aria-label="Manufacturado">👨‍🍳</span>
+                      : <span className={`font-medium ${(p.stock_cantidad ?? 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {p.stock_cantidad ?? 0} {getUnidadSimbolo(p.unidad_venta_id) === '—' ? 'u' : getUnidadSimbolo(p.unidad_venta_id)}
+                        </span>
                     }
                   </td>
-                  <td className="py-3 text-slate-300 text-sm">{getUnidadSimbolo(p.unidad_venta_id)}</td>
                   <td className="py-3">
                     <div className="flex flex-wrap gap-1">
                       {(p.categorias ?? []).map(c => (
@@ -525,18 +733,16 @@ export default function ProductosPage() {
                     </span>
                   </td>
                   <td className="py-3">
-                    <button
-                      onClick={() => esAdmin && toggleDisponible.mutate({ id: p.id, disponible: !p.disponible })}
-                      disabled={!esAdmin}
-                      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                        p.disponible ? 'bg-green-900/40 text-green-300 hover:bg-green-900/70' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
-                      } ${!esAdmin ? 'cursor-default' : 'cursor-pointer'}`}
-                    >
-                      {p.disponible ? 'Disponible' : 'No disponible'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <SwitchDisponible on={p.disponible} disabled={!esAdmin}
+                        onToggle={() => esAdmin && toggleDisponible.mutate({ id: p.id, disponible: !p.disponible })} />
+                      <span className={`text-xs ${p.disponible ? 'text-green-400' : 'text-slate-500'}`}>
+                        {p.disponible ? 'Disponible' : 'Agotado'}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-3">
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap justify-end">
                       <button onClick={() => navigate(`/productos/${p.id}`)} className="btn-secondary py-1 px-3">Ver</button>
                       {esAdmin && (
                         <>
@@ -553,12 +759,54 @@ export default function ProductosPage() {
             </tbody>
           </table>
         </div>
+        ) : (
+        /* ── Vista tarjetas ── */
+        productos.length === 0 ? (
+          <div className="card text-center py-10 text-slate-500">Sin resultados</div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+            {productos.map(p => (
+              <div key={p.id} className="bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+                <div className="relative h-32 bg-slate-800">
+                  {p.imagenes_url?.[0]
+                    ? <img src={cldThumb(p.imagenes_url[0], 'f_auto,q_auto,c_fill,w_400,h_240')} alt={p.nombre} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-4xl text-slate-600">🍽️</div>}
+                  <span className={`absolute top-2 right-2 px-2 py-0.5 rounded text-xs font-medium ${
+                    p.es_manufacturado ? 'bg-purple-900/70 text-purple-200' : 'bg-slate-900/70 text-slate-300'
+                  }`}>{p.es_manufacturado ? '👨‍🍳 Manuf.' : 'Terminado'}</span>
+                </div>
+                <div className="p-3 flex flex-col gap-2 flex-1">
+                  <div className="font-medium text-slate-100 truncate">{p.nombre}</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-brand-400 font-bold">${(p.precio_base ?? 0).toFixed(2)}</span>
+                    {p.es_manufacturado
+                      ? <span title="Depende de los ingredientes" className="cursor-help">👨‍🍳</span>
+                      : <span className={`text-xs font-medium ${(p.stock_cantidad ?? 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {p.stock_cantidad ?? 0} {getUnidadSimbolo(p.unidad_venta_id) === '—' ? 'u' : getUnidadSimbolo(p.unidad_venta_id)}
+                        </span>}
+                  </div>
+                  <div className="flex items-center justify-between pt-2 mt-auto border-t border-border">
+                    <SwitchDisponible on={p.disponible} disabled={!esAdmin}
+                      onToggle={() => esAdmin && toggleDisponible.mutate({ id: p.id, disponible: !p.disponible })} />
+                    <div className="flex gap-2 text-xs">
+                      <button onClick={() => navigate(`/productos/${p.id}`)} className="text-slate-400 hover:text-slate-100">Ver</button>
+                      {esAdmin && <button onClick={() => { setEditing(p); setMutError(null); setModalOpen(true) }} className="text-brand-400 hover:text-brand-300">Editar</button>}
+                      {esAdmin && <button onClick={() => { if (confirm('¿Eliminar?')) deleteMut.mutate(p.id) }} className="text-red-400 hover:text-red-300">Eliminar</button>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+        )
       )}
 
       {esAdmin && (
         <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setMutError(null) }}
           title={editing ? 'Editar producto' : 'Nuevo producto'} wide>
           <ProductoForm
+            key={editing?.id ?? 'nuevo'}
             initial={editing ?? undefined}
             categorias={arbolCats}
             unidades={unidades}

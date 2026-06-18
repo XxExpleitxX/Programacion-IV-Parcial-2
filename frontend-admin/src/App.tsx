@@ -75,7 +75,7 @@ function Header() {
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="w-full px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">P4</span>
@@ -119,7 +119,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+      <main className="flex-1 w-full px-6 py-8">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 

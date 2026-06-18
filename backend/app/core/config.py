@@ -34,11 +34,10 @@ class Settings(BaseSettings):
     MP_ACCESS_TOKEN: str = ""
     MP_PUBLIC_KEY: str = ""
     MP_WEBHOOK_SECRET: str = ""
-
-    # MercadoPago
-    MP_ACCESS_TOKEN: str = ""
-    MP_PUBLIC_KEY: str = ""
-    MP_WEBHOOK_SECRET: str = ""
+    # URL pública (ngrok) a la que MP envía las notificaciones IPN. Vacío = sin webhook.
+    MP_NOTIFICATION_URL: str = ""
+    # URL pública del frontend para las back_urls de Checkout PRO (default: localhost).
+    FRONT_URL: str = "http://localhost:5173"
 
     class Config:
         env_file = ".env"
