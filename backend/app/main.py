@@ -4,6 +4,7 @@ from fastapi import FastAPI, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy.exc import IntegrityError
 
 # Mapeo status → code semántico para el formato de error (RFC 7807 simplificado).
 _ERROR_CODES = {
@@ -70,6 +71,20 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         },
         headers=getattr(exc, "headers", None),
     )
+
+# ─── Violaciones de integridad de BD → 409 limpio (en vez de 500) ────────
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    """Nombre/código duplicado (UNIQUE) o referencia inexistente (FK).
+    Sin esto, cualquiera de estos casos saldría como 500."""
+    msg = str(getattr(exc, "orig", exc)).lower()
+    if "duplicate" in msg or "1062" in msg or "unique" in msg:
+        detail = "Ya existe un registro con ese valor (nombre o código duplicado)."
+    else:
+        detail = "Conflicto de integridad: el dato referencia algo inexistente o viola una restricción."
+    print(f"[DB] IntegrityError en {request.method} {request.url.path}: {getattr(exc, 'orig', exc)}")
+    return JSONResponse(status_code=409, content={"detail": detail, "code": "CONFLICT"})
+
 
 # ─── Todas las rutas cuelgan de /api/v1 ──────────────────
 api = APIRouter(prefix="/api/v1")

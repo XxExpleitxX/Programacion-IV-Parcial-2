@@ -1,18 +1,18 @@
 from decimal import Decimal
 from typing import Optional, List
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 # ─────────────────────────────────────────────
 # CATEGORIA
 # ─────────────────────────────────────────────
 class CategoriaCreate(BaseModel):
-    nombre: str
-    descripcion: Optional[str] = None
+    nombre: str = Field(max_length=100)
+    descripcion: Optional[str] = Field(default=None, max_length=500)
     parent_id: Optional[int] = None
     imagen_url: Optional[str] = None       # URL de Cloudinary
-    icono: Optional[str] = None            # emoji de la sección
-    color: Optional[str] = None            # color del badge
+    icono: Optional[str] = Field(default=None, max_length=16)   # emoji de la sección
+    color: Optional[str] = Field(default=None, max_length=24)   # color del badge
 
     @field_validator("nombre")
     @classmethod
@@ -23,12 +23,12 @@ class CategoriaCreate(BaseModel):
 
 
 class CategoriaUpdate(BaseModel):
-    nombre: Optional[str] = None
-    descripcion: Optional[str] = None
+    nombre: Optional[str] = Field(default=None, max_length=100)
+    descripcion: Optional[str] = Field(default=None, max_length=500)
     parent_id: Optional[int] = None
     imagen_url: Optional[str] = None       # URL de Cloudinary
-    icono: Optional[str] = None
-    color: Optional[str] = None
+    icono: Optional[str] = Field(default=None, max_length=16)
+    color: Optional[str] = Field(default=None, max_length=24)
 
 
 class CategoriaRead(BaseModel):
@@ -54,11 +54,11 @@ CategoriaConHijosRead.model_rebuild()
 # INGREDIENTE
 # ─────────────────────────────────────────────
 class IngredienteCreate(BaseModel):
-    nombre: str
-    descripcion: Optional[str] = None
+    nombre: str = Field(max_length=100)
+    descripcion: Optional[str] = Field(default=None, max_length=500)
     es_alergeno: bool = False
-    precio_unitario: float = 0.0
-    stock_disponible: int = 0.0
+    precio_unitario: float = Field(default=0.0, ge=0)
+    stock_disponible: int = Field(default=0, ge=0)
     unidad_medida_id: Optional[int] = None
 
     @field_validator("nombre")
@@ -70,11 +70,11 @@ class IngredienteCreate(BaseModel):
 
 
 class IngredienteUpdate(BaseModel):
-    nombre: Optional[str] = None
-    descripcion: Optional[str] = None
+    nombre: Optional[str] = Field(default=None, max_length=100)
+    descripcion: Optional[str] = Field(default=None, max_length=500)
     es_alergeno: Optional[bool] = None
-    precio_unitario: Optional[float] = None
-    stock_disponible: Optional[int] = None
+    precio_unitario: Optional[float] = Field(default=None, ge=0)
+    stock_disponible: Optional[int] = Field(default=None, ge=0)
     unidad_medida_id: Optional[int] = None
 
 
@@ -109,11 +109,11 @@ class IngredienteEnProducto(BaseModel):
 
 
 class ProductoCreate(BaseModel):
-    nombre: str
-    descripcion: Optional[str] = None
+    nombre: str = Field(max_length=150)
+    descripcion: Optional[str] = Field(default=None, max_length=500)
     precio_base: Decimal
     disponible: bool = True
-    stock_cantidad: int = 0
+    stock_cantidad: int = Field(default=0, ge=0)
     unidad_venta_id: Optional[int] = None
     categoria_ids: List[int] = []
     es_manufacturado: bool = False
@@ -136,11 +136,11 @@ class ProductoCreate(BaseModel):
 
 
 class ProductoUpdate(BaseModel):
-    nombre: Optional[str] = None
-    descripcion: Optional[str] = None
-    precio_base: Optional[Decimal] = None
+    nombre: Optional[str] = Field(default=None, max_length=150)
+    descripcion: Optional[str] = Field(default=None, max_length=500)
+    precio_base: Optional[Decimal] = Field(default=None, ge=0)
     disponible: Optional[bool] = None
-    stock_cantidad: Optional[int] = None
+    stock_cantidad: Optional[int] = Field(default=None, ge=0)
     unidad_venta_id: Optional[int] = None
     categoria_ids: Optional[List[int]] = None
     es_manufacturado: Optional[bool] = None

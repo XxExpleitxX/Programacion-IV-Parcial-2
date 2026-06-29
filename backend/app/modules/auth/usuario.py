@@ -110,12 +110,12 @@ class RefreshToken(SQLModel, table=True):
 # SCHEMAS
 # ─────────────────────────────────────────────
 class UsuarioCreate(SQLModel):
-    username:  str
-    nombre:    str
-    apellido:  str
-    email:     EmailStr
-    celular:   Optional[str] = None
-    password:  str = Field(min_length=8)
+    username:  str = Field(max_length=100)
+    nombre:    str = Field(max_length=80)
+    apellido:  str = Field(max_length=80)
+    email:     EmailStr = Field(max_length=254)
+    celular:   Optional[str] = Field(default=None, max_length=20)
+    password:  str = Field(min_length=8, max_length=128)
 
 
 class UsuarioPublic(SQLModel):

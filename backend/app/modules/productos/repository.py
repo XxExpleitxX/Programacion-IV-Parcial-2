@@ -102,3 +102,12 @@ class ProductoRepository(BaseRepository[Producto]):
     def clear_ingredientes(self, producto: Producto) -> None:
         for pi in list(producto.producto_ingredientes):
             self.session.delete(pi)
+
+    def delete_refs_a_ingrediente(self, ingrediente_id: int) -> None:
+        """Borra todas las filas de receta que referencian a un ingrediente
+        (usado al eliminar un ingrediente que ya no está en productos activos)."""
+        refs = self.session.exec(
+            select(ProductoIngrediente).where(ProductoIngrediente.ingrediente_id == ingrediente_id)
+        ).all()
+        for pi in refs:
+            self.session.delete(pi)
