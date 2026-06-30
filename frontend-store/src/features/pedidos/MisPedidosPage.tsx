@@ -121,7 +121,7 @@ export default function MisPedidosPage() {
               </span>
             </div>
 
-            {/* Detalles */}
+            {}
             <div className="space-y-1 mb-3">
               {(pedido.detalles ?? []).map((d, i) => (
                 <div key={i} className="flex justify-between text-sm">
@@ -151,7 +151,7 @@ export default function MisPedidosPage() {
               </div>
             </div>
 
-            {/* Modal cancelar inline */}
+            {}
             {cancelandoId === pedido.id && (
               <div className="mt-3 bg-gray-800 rounded-lg p-4 space-y-3">
                 <p className="text-sm text-gray-300">¿Por qué querés cancelar este pedido?</p>

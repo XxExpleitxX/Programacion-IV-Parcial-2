@@ -1,10 +1,3 @@
-"""
-Dependencias FastAPI para autenticación y autorización.
-
-Uso en routers:
-    current_user: Annotated[Usuario, Depends(get_current_active_user)]
-    _admin:       Annotated[Usuario, Depends(require_role(["ADMIN"]))]
-"""
 
 from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
@@ -18,13 +11,6 @@ def get_current_user(
     request: Request,
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> Usuario:
-    """
-    Lee el token desde cookie o header, lo valida y devuelve el Usuario.
-    Lanza 401 si el token es inválido o el usuario no existe.
-
-    El acceso a la BD pasa por el repositorio (uow.usuarios), nunca por la
-    sesión directa: una sola vía de acceso a datos en toda la app.
-    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No autenticado o token inválido",
@@ -53,7 +39,6 @@ def get_current_user(
 def get_current_active_user(
     current_user: Annotated[Usuario, Depends(get_current_user)],
 ) -> Usuario:
-    """Igual que get_current_user pero además verifica que la cuenta esté activa."""
     if current_user.disabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -63,15 +48,6 @@ def get_current_active_user(
 
 
 def require_role(roles: list[str]):
-    """
-    Factory de dependencias para RBAC.
-
-    Uso:
-        Depends(require_role(["ADMIN"]))
-        Depends(require_role(["ADMIN", "STOCK"]))
-
-    El usuario debe tener AL MENOS UNO de los roles indicados.
-    """
     def _check(
         current_user: Annotated[Usuario, Depends(get_current_active_user)],
     ) -> Usuario:

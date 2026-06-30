@@ -1,12 +1,3 @@
-"""
-ProductoIngrediente — pivote N:M Producto ↔ Ingrediente.
-
-unidad_medida_id: unidad usada en la RECETA (puede diferir del stock).
-  Ej: stock de harina en kg, pero la receta pide 200 g.
-
-es_removible = true → aparece en checkboxes de personalización del pedido.
-  IDs seleccionados → DetallePedido.personalizacion[].
-"""
 
 from typing import Optional, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship

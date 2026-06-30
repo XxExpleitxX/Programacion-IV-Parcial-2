@@ -1,13 +1,3 @@
-/**
- * useOrderStatusWS — conexión WebSocket de seguimiento de pedidos.
- *
- * - Auth por query param ?token=<jwt>.
- * - Con pedidoId  → se suscribe al canal de ESE pedido (cliente).
- * - Sin pedidoId  → feed "admin" de todos los pedidos (ADMIN/PEDIDOS).
- * - Reconexión exponencial (1s, 2s, 4s... tope 30s, hasta 10 intentos).
- * - El estado de conexión y el último evento viven en wsStore (Zustand).
- * - Cada evento dispara un toast (uiStore).
- */
 import { useEffect, useRef } from 'react'
 import { useAuth } from '../../store/authStore'
 import { useWS } from '../../store/wsStore'
@@ -29,7 +19,6 @@ function getToken(): string | null {
   return useAuth.getState().user?.token ?? null
 }
 
-/** Renueva el access token con el refresh token guardado (spec 9.6). Best-effort. */
 async function refrescarToken(): Promise<void> {
   const { user, setUser } = useAuth.getState()
   if (!user?.refresh_token) return
@@ -43,7 +32,7 @@ async function refrescarToken(): Promise<void> {
     if (!res.ok) return
     const data = await res.json()
     setUser({ ...user, token: data.access_token, refresh_token: data.refresh_token ?? user.refresh_token })
-  } catch { /* si falla, el backoff reintenta igual */ }
+  } catch {  }
 }
 
 export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options = {}) {
@@ -84,7 +73,7 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
           const estado = msg?.data?.estado_nuevo
           if (estado) addToast(`Pedido actualizado: ${labelEstado(String(estado))}`, 'info')
           onEventRef.current?.(msg)
-        } catch { /* ignore */ }
+        } catch {  }
       }
 
       ws.onclose = (ev) => {
@@ -113,7 +102,6 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
   return { connected }
 }
 
-/** Componente invisible: abre un WS para UN pedido y avisa cambios. Útil en listas. */
 export function PedidoWSListener({ pedidoId, onChange }: { pedidoId: number; onChange: () => void }) {
   useOrderStatusWS({ pedidoId, onEvent: onChange })
   return null

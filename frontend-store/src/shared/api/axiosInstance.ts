@@ -1,10 +1,3 @@
-/**
- * Instancia de Axios del Store.
- * - Request: agrega el access token JWT automáticamente.
- * - Response: ante un 401 intenta renovar el access token con el refresh token
- *   (POST /auth/refresh) y reintenta la request original UNA vez. Si el refresh
- *   falla, recién ahí desloguea y manda al login.
- */
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuth } from '../../store/authStore'
 

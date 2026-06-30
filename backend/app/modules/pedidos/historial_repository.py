@@ -1,10 +1,3 @@
-"""
-HistorialEstadoPedidoRepository — Audit Trail del pedido.
-
-Append-only: SOLO permite INSERT (nunca UPDATE ni DELETE).
-Cada cambio de estado de un pedido inserta una fila inmutable acá.
-El service lo usa como: uow.historial.append(registro)
-"""
 
 from typing import List
 from sqlmodel import Session, select
@@ -18,7 +11,6 @@ class HistorialEstadoPedidoRepository(BaseRepository[HistorialEstadoPedido]):
         super().__init__(session, HistorialEstadoPedido)
 
     def append(self, registro: HistorialEstadoPedido) -> HistorialEstadoPedido:
-        """SOLO INSERT — nunca update ni delete (audit trail inmutable)."""
         self.session.add(registro)
         return registro
 

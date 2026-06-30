@@ -1,7 +1,3 @@
-"""
-FormaPago y EstadoPedido — catálogos con PK semántica (string).
-Se cargan via seed, nunca por el usuario.
-"""
 
 from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship

@@ -1,8 +1,3 @@
-/**
- * Carrito con Zustand + persistencia en localStorage.
- * El middleware `persist` guarda automáticamente el estado
- * y lo restaura al recargar la página.
- */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Producto, ItemCarrito } from '../shared/types/index'

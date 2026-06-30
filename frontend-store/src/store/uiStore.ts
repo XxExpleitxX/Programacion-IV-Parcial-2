@@ -1,9 +1,3 @@
-/**
- * uiStore — estado de UI local: notificaciones (toasts).
- *
- * Cualquier parte de la app puede disparar un toast con addToast(); el
- * componente <Toasts/> los renderiza y se autodescartan.
- */
 import { create } from 'zustand'
 
 export type ToastTipo = 'success' | 'error' | 'info'

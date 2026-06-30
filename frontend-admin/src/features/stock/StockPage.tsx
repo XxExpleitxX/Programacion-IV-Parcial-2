@@ -1,12 +1,3 @@
-/**
- * StockPage — gestión de stock para el rol STOCK (y ADMIN).
- *
- * - Productos terminados: edición rápida de `stock_cantidad` con +/- y guardado
- *   masivo (PATCH /productos/{id}/stock por cada cambio).
- * - Productos manufacturados: el stock no se edita; se muestra el estado de los
- *   insumos (✅/⚠️) y cuántas unidades alcanzan los ingredientes (alerta de reposición).
- * - Disponibilidad: switch de acción inmediata (PATCH /productos/{id}/disponibilidad).
- */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productosApi, ingredientesApi } from '../../shared/api'
@@ -78,7 +69,7 @@ function FilaStock({ producto, estadoIng, valor, sucio, onDelta, onSet }: FilaPr
 
   return (
     <tr className={`hover:bg-surface/50 transition-colors ${sucio ? 'bg-brand-900/10' : ''}`}>
-      {/* Producto */}
+      {}
       <td className="py-3">
         <div className="flex items-center gap-3">
           <Thumb url={producto.imagenes_url?.[0]} alt={producto.nombre} />
@@ -89,7 +80,7 @@ function FilaStock({ producto, estadoIng, valor, sucio, onDelta, onSet }: FilaPr
         </div>
       </td>
 
-      {/* Stock */}
+      {}
       <td className="py-3">
         {man ? (
           estadoIng?.sinReceta ? (
@@ -120,7 +111,7 @@ function FilaStock({ producto, estadoIng, valor, sucio, onDelta, onSet }: FilaPr
         )}
       </td>
 
-      {/* Insumos */}
+      {}
       <td className="py-3">
         {!man ? (
           <span className="text-slate-600 text-xs">—</span>
@@ -146,7 +137,7 @@ function FilaStock({ producto, estadoIng, valor, sucio, onDelta, onSet }: FilaPr
         )}
       </td>
 
-      {/* Disponibilidad */}
+      {}
       <td className="py-3 text-right">
         <div className="inline-flex items-center gap-2">
           <span className={`text-xs ${producto.disponible ? 'text-green-400' : 'text-slate-500'}`}>
@@ -303,7 +294,7 @@ export default function StockPage() {
         </div>
       )}
 
-      {/* Barra flotante de cambios sin guardar */}
+      {}
       {nCambios > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 bg-card border border-brand-700/60 rounded-xl shadow-2xl px-5 py-3">
           <span className="text-sm text-slate-200">

@@ -1,8 +1,3 @@
-"""
-Rate limiter en memoria — cuenta INTENTOS FALLIDOS por IP.
-Si una IP supera el límite, bloquea por un tiempo (Retry-After).
-Usado para proteger endpoints sensibles a ataques de fuerza bruta, como login y register.
-"""
 import time
 from fastapi import HTTPException, status
 
@@ -20,7 +15,6 @@ class RateLimiter:
                 del self._fails[key]
 
     def assert_not_blocked(self, key: str) -> None:
-        """Si la IP ya superó el límite, corta con 429 + Retry-After."""
         now = time.time()
         self._prune(key, now)
         intentos = self._fails.get(key, [])
@@ -33,7 +27,6 @@ class RateLimiter:
             )
 
     def register_failure(self, key: str) -> None:
-        """Registra un intento fallido para esa IP."""
         now = time.time()
         self._fails.setdefault(key, []).append(now)
         self._prune(key, now)

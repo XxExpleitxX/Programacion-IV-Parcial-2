@@ -1,13 +1,3 @@
-"""
-HistorialEstadoPedido — ledger APPEND-ONLY de cambios de estado (RN-03).
-
-NUNCA UPDATE ni DELETE.
-El último registro (ORDER BY created_at DESC) = estado actual.
-
-estado_desde = NULL → creación del pedido (RN-02).
-usuario_id   = NULL → actor es el sistema (webhook MP).
-motivo obligatorio si estado_hacia = "CANCELADO" (RN-05).
-"""
 
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING

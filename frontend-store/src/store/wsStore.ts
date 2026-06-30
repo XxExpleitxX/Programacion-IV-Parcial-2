@@ -1,9 +1,3 @@
-/**
- * wsStore — estado global de la conexión WebSocket de seguimiento de pedidos.
- *
- * Lo escriben SOLO los hooks de WS (useOrderStatusWS); los componentes lo leen
- * para mostrar el badge "Sin conexión en tiempo real" y el último evento recibido.
- */
 import { create } from 'zustand'
 
 export interface WSEvent {

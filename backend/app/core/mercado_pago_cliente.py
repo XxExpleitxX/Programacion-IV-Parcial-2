@@ -1,7 +1,3 @@
-"""
-Cliente MercadoPago — instancia única del SDK.
-El access token sale del .env (MP_ACCESS_TOKEN). Nunca se expone al frontend.
-"""
 import mercadopago
 from app.core.config import settings
 

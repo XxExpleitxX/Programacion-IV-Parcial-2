@@ -39,7 +39,6 @@ class CategoriaRepository(BaseRepository[Categoria]):
         ).all()
 
     def tiene_productos_activos(self, categoria_id: int) -> bool:
-        """Verifica si la categoría tiene productos con disponible=True"""
         result = self.session.exec(
             select(ProductoCategoria)
             .join(Producto, ProductoCategoria.producto_id == Producto.id)

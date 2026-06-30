@@ -1,6 +1,3 @@
-/**
- * SeguimientoPedidoPage — seguimiento de UN pedido en tiempo real.
- */
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -167,7 +164,7 @@ useEffect(() => {
         </span>
       </div>
 
-      {/* Banner countdown al confirmar */}
+      {}
       {countdown !== null && (
         <div className="mb-5 bg-green-900/20 border border-green-800/50 rounded-xl p-4 text-center">
           <p className="text-green-300 text-sm font-medium">

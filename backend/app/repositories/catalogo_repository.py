@@ -1,12 +1,3 @@
-"""
-Repositorios de catálogos (FormaPago, EstadoPedido).
-
-Existen para que el service NO use uow.session.get(FormaPago, ...) directamente,
-sino uow.formas_pago.get_by_id(...). (Devolución del profe: nada de session en el service.)
-
-Nota: estos modelos tienen PK semántica de tipo string (ej. "EFECTIVO", "PENDIENTE"),
-y get_by_id de BaseRepository funciona igual con PK string.
-"""
 
 from typing import List, Optional
 from sqlmodel import Session, select

@@ -1,16 +1,3 @@
-"""
-Router de DireccionEntrega.
-
-CAMBIOS (devolución del profe):
-  - Ya NO se llama uow.commit() (commit automático del UoW).
-  - Ya NO se usa uow.session directamente: todo pasa por uow.direcciones.
-
-Endpoints:
-  POST   /direcciones/               → crear dirección
-  GET    /direcciones/               → listar mis direcciones
-  PATCH  /direcciones/{id}/principal → marcar como principal
-  DELETE /direcciones/{id}           → soft delete
-"""
 
 from datetime import datetime
 from typing import Annotated, List

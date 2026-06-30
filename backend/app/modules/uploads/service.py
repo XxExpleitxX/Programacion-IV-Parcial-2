@@ -1,8 +1,3 @@
-"""
-Servicio de uploads — Cloudinary.
-Valida MIME y tamaño, sube y elimina imágenes. No conoce HTTP más allá de las
-excepciones de FastAPI que levanta ante input inválido.
-"""
 import re
 
 import cloudinary
@@ -70,11 +65,6 @@ def eliminar_imagen(public_id: str) -> None:
 
 
 def public_id_de_url(url: str) -> str | None:
-    """
-    Deriva el public_id de una secure_url de Cloudinary.
-    Ej: https://res.cloudinary.com/demo/image/upload/v1/foodstore/productos/abc.jpg
-     →  foodstore/productos/abc
-    """
     partes = url.split("/upload/", 1)
     if len(partes) < 2:
         return None
@@ -87,7 +77,6 @@ def public_id_de_url(url: str) -> str | None:
 
 
 def borrar_por_url(url: str) -> None:
-    """Best-effort: borra de Cloudinary la imagen de una secure_url. NUNCA lanza."""
     public_id = public_id_de_url(url)
     if not public_id:
         return

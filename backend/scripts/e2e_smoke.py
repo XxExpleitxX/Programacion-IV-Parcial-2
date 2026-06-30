@@ -1,24 +1,3 @@
-"""
-Prueba piloto E2E del sistema Food Store — pega contra el backend VIVO.
-
-Recorre el flujo completo como lo haría el profesor:
-  - Auth + RBAC por rol (ADMIN / STOCK / PEDIDOS / CLIENT)
-  - Alta de catálogo (categoría con icono/color, ingredientes, productos)
-  - Control de stock estilo POS:
-      * consumo de insumos / stock al crear pedido
-      * editar la receta NO mueve stock
-      * rechazo por stock insuficiente (terminado y manufacturado)
-      * auto-agotado de terminado y de manufacturado
-      * restaurar stock al cancelar
-  - FSM de pedidos + reglas de cancelación del cliente
-
-Uso (con el backend corriendo, p. ej. uvicorn app.main:app --reload):
-    .venv\\Scripts\\python.exe scripts\\e2e_smoke.py
-    # o apuntando a otra URL:
-    set E2E_BASE=http://localhost:8000/api/v1 && .venv\\Scripts\\python.exe scripts\\e2e_smoke.py
-
-Sale con código 0 si todo pasa, 1 si hay algún fallo.
-"""
 import os
 import sys
 import time
@@ -61,7 +40,6 @@ def seccion(t):
 
 
 class Api:
-    """Cliente HTTP con token Bearer por rol."""
     def __init__(self, base):
         # connect corto (si el server no responde, falla rápido en vez de colgarse).
         self.c = httpx.Client(base_url=base, timeout=httpx.Timeout(15.0, connect=5.0))

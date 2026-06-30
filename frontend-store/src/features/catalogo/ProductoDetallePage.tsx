@@ -51,7 +51,7 @@ export default function ProductoDetallePage() {
             <p className="text-gray-400 mb-4">{producto.descripcion}</p>
           )}
 
-          {/* Categorías */}
+          {}
           <div className="flex flex-wrap gap-2 mb-4">
             {producto.categorias.map(c => (
               <span key={c.id} className="text-xs bg-orange-900/30 text-orange-400 px-3 py-1 rounded-full">
@@ -60,7 +60,7 @@ export default function ProductoDetallePage() {
             ))}
           </div>
 
-          {/* Estado */}
+          {}
           <div className="flex items-center gap-2 mb-6">
             <span className={`text-xs px-3 py-1 rounded-full ${
               producto.disponible
@@ -74,7 +74,7 @@ export default function ProductoDetallePage() {
             </span>
           </div>
 
-          {/* Botón agregar */}
+          {}
           {producto.disponible ? (
             <button onClick={() => agregar(producto)}
               className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition-colors">

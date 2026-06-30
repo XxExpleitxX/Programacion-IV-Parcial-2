@@ -1,11 +1,3 @@
-"""
-Pago — registro de pago MercadoPago.
-
-idempotency_key: UUID generado POR EL BACKEND, enviado a MP
-en header X-Idempotency-Key para evitar cobros duplicados.
-
-mp_payment_id: ID que devuelve MP tras procesar el pago (NULL hasta webhook).
-"""
 
 from datetime import datetime
 from decimal import Decimal

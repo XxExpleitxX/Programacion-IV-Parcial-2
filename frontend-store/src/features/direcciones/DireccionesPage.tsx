@@ -89,7 +89,7 @@ export default function DireccionesPage() {
         </div>
       )}
 
-      {/* Lista */}
+      {}
       <div className="space-y-3 mb-6">
         {direcciones.map(d => (
           <div key={d.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-start justify-between gap-4">
@@ -118,7 +118,7 @@ export default function DireccionesPage() {
         ))}
       </div>
 
-      {/* Formulario crear/editar */}
+      {}
       {abierto && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h2 className="text-white font-semibold mb-4">{editId ? 'Editar dirección' : 'Nueva dirección'}</h2>

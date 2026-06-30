@@ -1,19 +1,3 @@
-"""
-Seed de catálogo (demo) — menú de comida rápida con imágenes.
-
-Ejecutar:
-    python -m app.db.seed_catalogo
-
-- Crea las categorías que falten.
-- Crea un menú variado de productos (idempotente: salta los que ya existen por nombre).
-- Backfill: a TODO producto sin imagen le asigna una foto según su nombre.
-
-Las imágenes son URLs públicas de Unsplash. El front las muestra tal cual
-(cldThumb solo transforma URLs de Cloudinary). Si alguna no carga, cambiá la URL
-acá abajo o subí la imagen real desde el panel admin (Cloudinary).
-
-El commit es automático (Unit of Work).
-"""
 from decimal import Decimal
 
 from app.modules.categorias.categoria import Categoria
@@ -35,7 +19,6 @@ IMG = {
 
 
 def imagen_por_nombre(nombre: str) -> str:
-    """Elige una foto según palabras clave del nombre del producto."""
     n = nombre.lower()
     if "pizza" in n:                                   return IMG["pizza"]
     if any(k in n for k in ("burger", "hamburg", "doble")): return IMG["burger"]

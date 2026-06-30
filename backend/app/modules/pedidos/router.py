@@ -1,14 +1,3 @@
-"""
-Router de Pedidos.
-
-Roles:
-  - CLIENT: crear pedido, ver sus pedidos, cancelar desde PENDIENTE/CONFIRMADO
-  - PEDIDOS: ver todos, avanzar estados
-  - ADMIN: todo
-
-CAMBIO (devolución del profe): ya NO se llama uow.commit() en los endpoints.
-El commit es automático (lo hace el Unit of Work al terminar bien el request).
-"""
 
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, Query, status

@@ -1,12 +1,3 @@
-"""
-Router WebSocket — seguimiento de pedidos en tiempo real (RN-06).
-
-Dos canales (rutas nombradas):
-  - WS /api/v1/ws/pedidos/{pedido_id}  → canal de ESE pedido (cliente que lo sigue).
-  - WS /api/v1/ws/admin/pedidos        → feed de TODOS los pedidos (ADMIN/PEDIDOS).
-
-Auth por query param ?token=<jwt>. El broadcast lo dispara el UoW POST-commit.
-"""
 from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
@@ -18,11 +9,6 @@ router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
 
 async def _autenticar(websocket: WebSocket, token: str) -> Optional[list[str]]:
-    """Valida el JWT y el usuario. Devuelve los roles, o cierra la conexión y None.
-
-    Cierra con close code 4001 si el token EXPIRÓ (el cliente debe refrescar y
-    reconectar, spec 9.6) y con 1008 si es inválido por cualquier otro motivo.
-    """
     payload, motivo = decode_token_estado(token)
     if not payload or not payload.get("sub"):
         await websocket.accept()
@@ -41,7 +27,6 @@ async def _autenticar(websocket: WebSocket, token: str) -> Optional[list[str]]:
 
 
 async def _mantener_vivo(websocket: WebSocket, channel: str) -> None:
-    """Registra la conexión en el canal y la mantiene viva hasta que se desconecte."""
     await manager.connect(websocket, channel)
     try:
         while True:

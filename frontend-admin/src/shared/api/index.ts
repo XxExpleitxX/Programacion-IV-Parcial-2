@@ -1,7 +1,3 @@
-/**
- * Capa de API — usa axiosInstance para todas las peticiones.
- * El interceptor agrega el token y maneja el 401 automáticamente.
- */
 
 import axiosInstance from './axiosInstance'
 import type {

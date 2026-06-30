@@ -94,13 +94,11 @@ class IngredienteRead(BaseModel):
 # PRODUCTO
 # ─────────────────────────────────────────────
 class IngredienteCantidad(BaseModel):
-    """Un ingrediente de la receta con su cantidad (maestro-detalle)."""
     ingrediente_id: int
     cantidad: float = 1.0
 
 
 class IngredienteEnProducto(BaseModel):
-    """Ingrediente de un producto manufacturado, para precargar al editar."""
     ingrediente_id: int
     nombre: str
     cantidad: float

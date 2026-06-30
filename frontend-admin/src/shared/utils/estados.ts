@@ -1,4 +1,3 @@
-/** Etiquetas legibles de los estados del pedido (código → texto para el usuario). */
 export const ESTADO_LABELS: Record<string, string> = {
   PENDIENTE:  'Pendiente',
   CONFIRMADO: 'Confirmado',

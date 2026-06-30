@@ -1,15 +1,3 @@
-"""
-Seed de ingredientes para las recetas del menú (demo).
-
-Ejecutar:
-    python -m app.db.seed_ingredientes
-
-Crea SOLO los ingredientes que falten (idempotente por nombre). Asigna la unidad
-de medida por su símbolo (g / ud) — requiere que las unidades estén seedeadas
-(python -m app.db.seed). Marca es_alergeno en lácteos y harinas (badge en la UI).
-
-El commit es automático (Unit of Work).
-"""
 from app.modules.ingredientes.ingrediente import Ingrediente
 from app.unit_of_work import UnitOfWork
 

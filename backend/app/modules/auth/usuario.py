@@ -1,6 +1,3 @@
-"""
-Modelos del Usuarios — Identidad & Acceso.
-"""
 
 from datetime import datetime
 from typing import Optional, List

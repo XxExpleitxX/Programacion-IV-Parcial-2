@@ -1,13 +1,3 @@
-/**
- * authStore — estado de autenticación del panel admin.
- *
- * Reemplaza AuthContext. Usa persist para sobrevivir recargas de página.
- * La clave en localStorage es 'admin_auth' (distinta al frontend-store
- * que usa 'store_user', para que no se pisen).
- *
- * Acceso fuera de React (interceptor de axios):
- *   useAuthStore.getState().user?.token
- */
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'

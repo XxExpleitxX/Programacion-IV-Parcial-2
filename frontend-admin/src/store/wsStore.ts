@@ -1,12 +1,3 @@
-/**
- * wsStore — estado de la conexión WebSocket del panel admin.
- *
- * Lo escriben SOLO los hooks de WS (useOrderStatusWS).
- * Los componentes lo leen para mostrar el badge de conexión
- * y el último evento recibido.
- *
- * NO persiste (estado efímero de conexión de red).
- */
 
 import { create } from 'zustand'
 

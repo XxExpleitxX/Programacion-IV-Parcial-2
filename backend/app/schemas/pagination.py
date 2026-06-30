@@ -1,7 +1,3 @@
-"""
-Envelope de paginación estándar (convención global de la API):
-    { items: [...], total: N, page: 1, size: 20, pages: P }
-"""
 from math import ceil
 from typing import Generic, Sequence, TypeVar
 
@@ -19,7 +15,6 @@ class Paginated(BaseModel, Generic[T]):
 
 
 def paginate(items: Sequence, total: int, page: int, size: int) -> dict:
-    """Arma el dict del envelope. `items` se coacciona al schema vía response_model."""
     return {
         "items": list(items),
         "total": total,

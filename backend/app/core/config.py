@@ -1,7 +1,3 @@
-"""
-Configuración central de la aplicación.
-Lee variables de entorno desde .env via python-dotenv.
-"""
 from pydantic_settings import BaseSettings
 
 

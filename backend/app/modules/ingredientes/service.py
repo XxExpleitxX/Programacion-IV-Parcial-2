@@ -1,9 +1,3 @@
-"""
-Servicio de ingredientes — lógica de negocio pura.
-
-Regla UoW:
-  - Sin commit() — lo controla el router
-"""
 
 from typing import List, Optional
 from fastapi import HTTPException, status

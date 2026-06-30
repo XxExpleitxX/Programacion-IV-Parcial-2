@@ -1,9 +1,3 @@
-"""
-EstadisticasService — lógica de cálculo de KPIs (stateless, vía UoW).
-
-Cuantiza todos los montos a 2 decimales (EST-04: dinero como Decimal).
-Las queries crudas viven en EstadisticasRepository; acá se ensamblan los schemas.
-"""
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -17,7 +11,6 @@ _DOS_DEC = Decimal("0.01")
 
 
 def _money(v) -> Decimal:
-    """Normaliza a Decimal(10,2) — EST-04."""
     return Decimal(str(v)).quantize(_DOS_DEC, rounding=ROUND_HALF_UP)
 
 

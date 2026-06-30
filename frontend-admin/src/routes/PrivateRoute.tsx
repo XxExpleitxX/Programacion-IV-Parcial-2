@@ -1,7 +1,3 @@
-/**
- * PrivateRoute — protege rutas según autenticación y rol.
- * Usa authStore (Zustand) en vez de AuthContext.
- */
 
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'

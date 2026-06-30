@@ -1,12 +1,3 @@
-/**
- * useOrderStatusWS — conexión WebSocket de seguimiento de pedidos.
- *
- * - Auth por query param ?token=<jwt>.
- * - Con pedidoId  → se suscribe al canal de ESE pedido (cliente).
- * - Sin pedidoId  → feed "admin" de todos los pedidos (ADMIN/PEDIDOS).
- * - Reconexión exponencial (1s, 2s, 4s... tope 30s, hasta 10 intentos).
- * - Expone `connected` para mostrar el badge "Sin conexión en tiempo real".
- */
 import { useEffect, useRef, useState } from 'react'
 
 const WS_ROOT = 'ws://localhost:8000/api/v1/ws'
@@ -29,7 +20,6 @@ function getToken(): string | null {
   }
 }
 
-/** Renueva el access token con el refresh token persistido (spec 9.6). Best-effort. */
 async function refrescarToken(): Promise<void> {
   try {
     const raw = localStorage.getItem('admin_auth')
@@ -50,7 +40,7 @@ async function refrescarToken(): Promise<void> {
       refresh_token: data.refresh_token ?? refresh,
     }
     localStorage.setItem('admin_auth', JSON.stringify(parsed))
-  } catch { /* si falla, el backoff reintenta igual */ }
+  } catch {  }
 }
 
 export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options = {}) {
@@ -82,7 +72,7 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
       ws.onopen = () => { intentos = 0; setConnected(true) }
 
       ws.onmessage = (e) => {
-        try { onEventRef.current?.(JSON.parse(e.data)) } catch { /* ignore */ }
+        try { onEventRef.current?.(JSON.parse(e.data)) } catch {  }
       }
 
       ws.onclose = (ev) => {
@@ -111,7 +101,6 @@ export function useOrderStatusWS({ pedidoId, onEvent, enabled = true }: Options 
   return { connected }
 }
 
-/** Componente invisible: abre un WS para UN pedido y avisa cambios. Útil en listas. */
 export function PedidoWSListener({ pedidoId, onChange }: { pedidoId: number; onChange: () => void }) {
   useOrderStatusWS({ pedidoId, onEvent: onChange })
   return null

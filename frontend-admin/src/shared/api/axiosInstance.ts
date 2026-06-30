@@ -1,9 +1,3 @@
-/**
- * axiosInstance — cliente HTTP con interceptors JWT.
- *
- * Lee el token desde authStore (Zustand) usando getState(),
- * que funciona tanto dentro como fuera de componentes React.
- */
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../../store/authStore'

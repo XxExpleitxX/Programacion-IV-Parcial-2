@@ -53,7 +53,7 @@ export default function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
       
-      {/* Header del Menú */}
+      {}
       <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-white tracking-tight">
@@ -62,7 +62,7 @@ export default function HomePage() {
           <p className="text-gray-400 mt-2 text-lg">Descubre sabores increíbles hoy</p>
         </div>
         
-        {/* Contador de resultados */}
+        {}
         {!isLoading && (
            <span className="text-gray-500 text-sm font-medium bg-gray-800 px-3 py-1 rounded-full">
              {total} {total === 1 ? 'producto' : 'productos'}
@@ -70,12 +70,12 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* BARRA DE FILTROS MEJORADA */}
+      {}
       <div className="space-y-4 mb-10 bg-gray-800/50 p-6 rounded-2xl border border-gray-700/50 backdrop-blur-sm">
         
-        {/* Fila 1: Búsqueda y Precio */}
+        {}
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Buscador */}
+          {}
           <div className="relative flex-grow">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             <input
@@ -86,7 +86,7 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Filtro de Precio (Dropdown discreto) */}
+          {}
           <select
             className="bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white text-sm focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
             value={precioMax ?? ''}
@@ -99,9 +99,9 @@ export default function HomePage() {
           </select>
         </div>
 
-        {/* Fila 2: Categorías como CHIPS (Pills) */}
+        {}
         <div className="flex flex-wrap gap-2 pt-2">
-           {/* Chip "Todos" */}
+           {}
            <button 
              onClick={() => setCategoriaId(null)}
              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border ${
@@ -113,7 +113,7 @@ export default function HomePage() {
              🍽️ Todos
            </button>
 
-           {/* Chips de Categorías */}
+           {}
            {categorias.map(({ cat, nivel }) => {
              const activo = categoriaId === cat.id
              const color = cat.color || null
@@ -135,7 +135,7 @@ export default function HomePage() {
                      : color ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:border-gray-500'
                  }`}
                >
-                 {/* Agrega un pequeño margen a la izquierda si es subcategoría */}
+                 {}
                  {nivel > 0 && <span className="mr-1 opacity-50">↳</span>}
                  {cat.icono && <span className="mr-1">{cat.icono}</span>}
                  {cat.nombre}
@@ -145,7 +145,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* GRID DE PRODUCTOS CON SKELETONS */}
+      {}
       {isLoading ? (
         // Skeletons de carga (se ve profesional)
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -165,7 +165,7 @@ export default function HomePage() {
         </div>
       ) : (
         <>
-          {/* Estado Vacío */}
+          {}
           {productos.length === 0 ? (
             <div className="text-center py-24">
               <div className="text-6xl mb-4 grayscale opacity-50">🍔</div>
@@ -179,7 +179,6 @@ export default function HomePage() {
               </button>
             </div>
           ) : (
-            /* Resultados Reales */
             <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 transition-opacity ${
               isFetching && isPlaceholderData ? 'opacity-60' : 'opacity-100'
             }`}>
@@ -189,7 +188,7 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Paginación */}
+          {}
           {(page > 1 || hayPaginaSiguiente) && productos.length > 0 && (
             <div className="flex items-center justify-center gap-4 mt-10">
               <button

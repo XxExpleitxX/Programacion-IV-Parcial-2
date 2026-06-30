@@ -57,7 +57,7 @@ function IngredienteForm({ initial, unidades, onSubmit, isLoading, error }: Form
         </div>
       </div>
 
-      {/* Unidad de medida como selector de botones con icono */}
+      {}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Unidad de medida</label>
         <div className="grid grid-cols-3 gap-2">
@@ -91,7 +91,7 @@ function IngredienteForm({ initial, unidades, onSubmit, isLoading, error }: Form
         )}
       </div>
 
-      {/* Alérgeno como switch */}
+      {}
       <div onClick={() => setEsAlergeno(!esAlergeno)}
         className="flex items-center justify-between cursor-pointer bg-surface border border-border rounded-lg px-3 py-2.5 select-none">
         <span className="text-sm text-slate-300 flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function IngredientesPage() {
 
   return (
     <div>
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-3xl text-slate-100">Ingredientes</h1>
@@ -207,13 +207,13 @@ export default function IngredientesPage() {
         </button>
       </div>
 
-      {/* Buscador */}
+      {}
       <div className="mb-5">
         <input className="input-field max-w-sm" placeholder="Buscar por nombre..."
           value={search} onChange={e => handleSearch(e.target.value)} />
       </div>
 
-      {/* Tabla */}
+      {}
       {isLoading && <p className="text-slate-400">Cargando...</p>}
       {isError && <p className="text-red-400">Error al cargar los ingredientes.</p>}
       {!isLoading && !isError && (
@@ -265,7 +265,7 @@ export default function IngredientesPage() {
                     </td>
                   </tr>
                 ))}
-                {/* Skeletons mientras recarga con paginación */}
+                {}
                 {isFetching && ingredientes.length > 0 && (
                   <tr>
                     <td colSpan={4} className="py-4 text-center">
@@ -283,17 +283,17 @@ export default function IngredientesPage() {
             </table>
           </div>
 
-          {/*  Controles de Paginación */}
+          {}
           <div className="mt-6 flex items-center justify-between">
-            {/* Info de resultados */}
+            {}
             <div className="text-sm text-slate-400">
               Mostrando <span className="font-semibold text-slate-200">{ingredientes.length}</span> ingredientes
               {search && <span className="text-slate-500"> (filtrados)</span>}
             </div>
 
-            {/* Botones de navegación */}
+            {}
             <div className="flex items-center gap-2">
-              {/* Botón Anterior */}
+              {}
               <button
                 onClick={() => setPage(p => p - 1)}
                 disabled={!hasPrevPage}
@@ -305,12 +305,12 @@ export default function IngredientesPage() {
                 Anterior
               </button>
 
-              {/* Número de página */}
+              {}
               <div className="flex items-center gap-1 px-3 py-2 bg-brand-900/30 border border-brand-700/50 rounded-lg">
                 <span className="text-sm font-semibold text-brand-400">{page + 1}</span>
               </div>
 
-              {/* Botón Siguiente */}
+              {}
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={!hasNextPage}
@@ -326,7 +326,7 @@ export default function IngredientesPage() {
         </>
       )}
 
-      {/* Modal */}
+      {}
       <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setMutError(null) }}
         title={editing ? 'Editar ingrediente' : 'Nuevo ingrediente'}>
         <IngredienteForm

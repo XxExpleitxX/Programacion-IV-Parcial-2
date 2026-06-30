@@ -1,4 +1,3 @@
-"""Tests del módulo de estadísticas: RBAC + EST-01/02."""
 from sqlmodel import select
 from app.modules.auth.usuario import Usuario
 

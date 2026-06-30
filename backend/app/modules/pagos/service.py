@@ -1,12 +1,3 @@
-"""
-Servicio de pagos — MercadoPago Checkout PRO (CardPayment / API).
-
-Flujo:
-  1. El frontend tokeniza la tarjeta con MP.js (PCI) y manda el token.
-  2. crear_pago() arma el pago, genera idempotency_key (UUID) y lo manda al SDK.
-  3. Si MP lo aprueba, se confirma el pedido (PENDIENTE → CONFIRMADO).
-  4. El webhook IPN re-consulta el pago en MP y sincroniza estado (fuente de verdad: MP).
-"""
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
@@ -24,11 +15,6 @@ from app.unit_of_work import UnitOfWork
 
 
 def crear_preferencia(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
-    """
-    Checkout PRO: crea una preferencia con los items del pedido y devuelve el
-    init_point (URL de la página de pago de MercadoPago). Registra un Pago
-    PENDIENTE enlazado por external_reference para confirmar luego.
-    """
     pedido = uow.pedidos.get_by_id(pedido_id)
     if not pedido or pedido.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Pedido no encontrado.")
@@ -101,7 +87,6 @@ def crear_preferencia(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
 
 
 def _confirmar_pedido(uow: UnitOfWork, pedido) -> None:
-    """PENDIENTE → CONFIRMADO + historial (sistema). Idempotente."""
     if pedido.estado_codigo != "PENDIENTE":
         return
     desde = pedido.estado_codigo
@@ -197,11 +182,6 @@ def crear_pago(uow: UnitOfWork, usuario_id: int, data: CrearPagoRequest) -> Pago
 
 
 def verificar_pago(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
-    """
-    Checkout PRO sin webhook público: al volver, el front pide verificar.
-    Busca el pago en MercadoPago por external_reference; si está aprobado,
-    sincroniza el Pago y confirma el pedido (+ evento WS).
-    """
     pedido = uow.pedidos.get_by_id(pedido_id)
     if not pedido or pedido.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Pedido no encontrado.")
@@ -235,10 +215,6 @@ def verificar_pago(uow: UnitOfWork, usuario_id: int, pedido_id: int) -> dict:
 
 
 def procesar_webhook(uow: UnitOfWork, payment_id: str) -> Optional[int]:
-    """
-    IPN: re-consulta el pago en MP (no confía en el body) y sincroniza.
-    Devuelve el pedido_id afectado (para el broadcast WS) o None.
-    """
     try:
         result = get_sdk().payment().get(payment_id)
     except Exception as e:
@@ -268,10 +244,6 @@ def procesar_webhook(uow: UnitOfWork, payment_id: str) -> Optional[int]:
 
 
 def procesar_merchant_order(uow: UnitOfWork, merchant_order_id: str) -> Optional[int]:
-    """
-    Checkout PRO notifica con topic=merchant_order. La merchant order contiene
-    la lista de pagos; buscamos uno aprobado y lo procesamos como un pago normal.
-    """
     try:
         result = get_sdk().merchant_order().get(merchant_order_id)
     except Exception as e:

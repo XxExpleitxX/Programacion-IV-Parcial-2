@@ -1,12 +1,3 @@
-"""
-Router de pagos — MercadoPago.
-POST   /pagos/crear            → crea el pago con el token de tarjeta — CardPayment (CLIENT)
-POST   /pagos/preferencia      → crea preferencia Checkout PRO, devuelve init_point (CLIENT)
-POST   /pagos/confirmar        → al volver de Checkout PRO, sincroniza el pago (CLIENT)
-POST   /pagos/webhook          → IPN de MercadoPago (público)
-GET    /pagos/webhook          → verificación de URL por MercadoPago
-GET    /pagos/{pedido_id}      → consulta el pago de un pedido (dueño/ADMIN)
-"""
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, status
 

@@ -1,14 +1,3 @@
-"""
-WebSocket Manager — pool de conexiones POR CANAL.
-
-Canales:
-  - str(pedido_id) → suscriptores de un pedido puntual (el cliente que lo sigue)
-  - "admin"        → feed de TODOS los pedidos (cajero / panel admin)
-
-El broadcast SIEMPRE se dispara DESPUÉS del commit del UoW (RN-06):
-los eventos se encolan en el UoW durante la transacción y get_uow los emite
-una vez confirmada. Si no hay suscriptores en un canal, el envío es un no-op.
-"""
 import logging
 from typing import Any
 from fastapi import WebSocket
@@ -42,7 +31,6 @@ class WSManager:
                 self.channels[channel].discard(connection)   # conexión caída → la saco
 
     async def broadcast_pedido(self, pedido_id: int, evento: dict[str, Any]) -> None:
-        """Envía el evento al dueño del pedido (canal pedido_id) y al canal admin."""
         payload = {"event": evento.get("event", "estado_cambiado"), "data": evento}
         await self._send(str(pedido_id), payload)
         await self._send(ADMIN_CHANNEL, payload)

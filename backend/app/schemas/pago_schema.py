@@ -1,6 +1,3 @@
-"""
-Schemas del Dominio 3 — request / response para Pedidos.
-"""
 
 from datetime import datetime
 from decimal import Decimal
@@ -120,7 +117,6 @@ class AvanzarEstadoRequest(BaseModel):
 # ── Pagos — MercadoPago  ────────────────────────────────────────────
 
 class CrearPagoRequest(BaseModel):
-    """Datos que envía el frontend tras tokenizar la tarjeta con MP.js (PCI)."""
     pedido_id:         int
     token:             str               # token de tarjeta generado por MP.js
     payment_method_id: str               # ej: 'visa', 'master'
@@ -130,7 +126,6 @@ class CrearPagoRequest(BaseModel):
 
 
 class PagoResponse(BaseModel):
-    """Vista del pago registrado. Refleja la tabla Pago."""
     id:                 int
     pedido_id:          int
     mp_payment_id:      Optional[int]
@@ -158,5 +153,4 @@ class PreferenciaResponse(BaseModel):
 
 
 class ConfirmarPagoRequest(BaseModel):
-    """Al volver de Checkout PRO, el front manda el payment_id que MP puso en la URL."""
     payment_id: str

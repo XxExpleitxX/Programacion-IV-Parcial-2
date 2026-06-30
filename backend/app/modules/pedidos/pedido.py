@@ -1,12 +1,3 @@
-"""
-Pedido — cabecera del pedido.
-
-Campos monetarios son SNAPSHOT (inmutables desde creación):
-  subtotal, descuento, costo_envio, total.
-
-estado_codigo se actualiza atómicamente junto con
-un INSERT en HistorialEstadoPedido (ver PedidoService.avanzar_estado).
-"""
 
 from datetime import datetime
 from decimal import Decimal

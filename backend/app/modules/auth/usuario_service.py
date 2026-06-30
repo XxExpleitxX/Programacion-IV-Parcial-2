@@ -1,7 +1,3 @@
-"""
-Servicio de usuarios — lógica de negocio de autenticación y gestión.
-No conoce FastAPI ni HTTP: solo recibe datos, opera sobre la UoW y retorna entidades.
-"""
 
 import logging
 import hashlib
@@ -17,12 +13,10 @@ from app.unit_of_work import UnitOfWork
 
 
 def _hash_token(token: str) -> str:
-    """SHA-256 del token (64 hex). Nunca guardamos el token crudo."""
     return hashlib.sha256(token.encode()).hexdigest()
 
 
 def _emitir_tokens(uow: UnitOfWork, usuario: Usuario) -> Token:
-    """Crea access + refresh, guarda el hash del refresh y arma el Token."""
     expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
     access_token = create_access_token(
         data={"sub": usuario.username, "roles": usuario.roles},
@@ -46,12 +40,6 @@ logger = logging.getLogger("app.auth")   # 👈 para loguear el motivo del fallo
 
 
 def registrar_usuario(uow: UnitOfWork, data: UsuarioCreate) -> Usuario:
-    """
-    Registra un usuario nuevo.
-    - Valida username y email únicos
-    - Hashea la contraseña
-    - Asigna rol CLIENTE por defecto
-    """
     if uow.usuarios.get_by_username(data.username):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -82,16 +70,6 @@ def registrar_usuario(uow: UnitOfWork, data: UsuarioCreate) -> Usuario:
 
 
 def autenticar_usuario(uow: UnitOfWork, username: str, password: str) -> Token:
-    """
-    Valida credenciales y genera un JWT.
-    - Busca el usuario por username
-    - Verifica la contraseña con bcrypt
-    - Genera token con sub=username y roles en el payload
-
-    Nota de seguridad: la respuesta al cliente es SIEMPRE genérica
-    ("Usuario o contraseña incorrectos") para evitar user enumeration.
-    El motivo real se registra solo en el log del servidor.
-    """
     usuario = uow.usuarios.get_by_username(username)
 
     # Caso 1: el usuario no existe
@@ -125,11 +103,6 @@ def autenticar_usuario(uow: UnitOfWork, username: str, password: str) -> Token:
 
 
 def refrescar_token(uow: UnitOfWork, refresh_token: str) -> Token:
-    """
-    Valida un refresh token y emite un nuevo access token.
-    - Verifica que el JWT sea válido y de tipo 'refresh'
-    - Verifica que esté guardado, no revocado y no expirado
-    """
     payload = decode_token(refresh_token)
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Refresh token inválido")
@@ -156,12 +129,10 @@ def refrescar_token(uow: UnitOfWork, refresh_token: str) -> Token:
 
 
 def revocar_refresh_token(uow: UnitOfWork, refresh_token: str) -> None:
-    """Invalida un refresh token (logout)."""
     uow.refresh_tokens.revoke(_hash_token(refresh_token))
 
 
 def set_disabled(uow: UnitOfWork, usuario_id: int, disabled: bool) -> Usuario:
-    """Activa o desactiva una cuenta."""
     usuario = uow.usuarios.get_by_id(usuario_id)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")

@@ -1,27 +1,3 @@
-/**
- * App.tsx — enrutamiento principal del panel de administración.
- *
- * Estado de autenticación: Zustand (authStore) con persist.
- * Sin AuthProvider/AuthContext — el store es global por naturaleza.
- *
- * Estructura Feature-Sliced Design:
- *   src/
- *   ├── features/
- *   │   ├── auth/          LoginPage
- *   │   ├── dashboard/     DashboardPage (KPIs + recharts)
- *   │   ├── productos/     ProductosPage, ProductoDetallePage
- *   │   ├── categorias/    CategoriasPage
- *   │   ├── ingredientes/  IngredientesPage
- *   │   └── pedidos/       CajeroPedidoPage
- *   ├── shared/
- *   │   ├── api/           axiosInstance + APIs
- *   │   ├── components/    Modal
- *   │   ├── hooks/         useOrderStatusWS
- *   │   └── types/         tipos compartidos
- *   └── store/
- *       ├── authStore.ts   ← Zustand + persist (reemplaza AuthContext)
- *       └── wsStore.ts     ← Zustand sin persist (estado de red)
- */
 
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 
@@ -92,7 +68,7 @@ function Header() {
             {esStock  && <NavItem to="/stock" label="📦 Stock" />}
             {esCajero && <NavItem to="/cajero" label="🧾 Cajero" />}
 
-            {/* Badge conexión WS */}
+            {}
             <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
               wsOn
                 ? 'bg-green-900/40 text-green-400'

@@ -1,11 +1,3 @@
-"""
-UnidadMedida — catálogo del Dominio 2.
-
-Seed obligatorio:
-  masa:    kilogramo (kg), gramo (g)
-  volumen: litro (L), mililitro (mL)
-  unidad:  pieza (u), docena (doc)
-"""
 
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING

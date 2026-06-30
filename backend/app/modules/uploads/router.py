@@ -1,8 +1,3 @@
-"""
-Router de uploads — Cloudinary.
-POST   /uploads/imagen              → sube imagen (multipart/form-data), ADMIN
-DELETE /uploads/imagen/{public_id}  → elimina por public_id, ADMIN
-"""
 from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 

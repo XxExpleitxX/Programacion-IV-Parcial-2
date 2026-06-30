@@ -1,4 +1,3 @@
-"""Tests de autenticación."""
 
 
 def _register(client, username="nuevo"):

@@ -17,7 +17,7 @@ venv/
 env/
 *.egg-info/
 .pytest_cache/
-.mypy_cache/
+requirements.frozen.txt
 
 # ──────────────────────────────────────────────
 # Node / Vite (frontend-admin, frontend-store)

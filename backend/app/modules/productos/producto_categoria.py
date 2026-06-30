@@ -1,8 +1,3 @@
-"""
-ProductoCategoria — pivote N:M Producto ↔ Categoria.
-es_principal = true indica la categoría principal del producto
-(solo una por producto en lógica de negocio, validar en Service).
-"""
 
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING

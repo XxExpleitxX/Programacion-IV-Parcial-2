@@ -205,10 +205,10 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
     <form onSubmit={handleSubmit} className="max-h-[80vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* ─────────── Columna izquierda (70%) ─────────── */}
+        {}
         <div className="lg:col-span-2 space-y-4">
 
-          {/* Información básica */}
+          {}
           <SeccionCard titulo="📝 Información básica">
             <div className="space-y-4">
               <div>
@@ -231,7 +231,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
                   placeholder="Descripción opcional del producto…" />
               </div>
 
-              {/* Tipo de producto */}
+              {}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Tipo de producto</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -257,7 +257,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
                 </div>
               </div>
 
-              {/* Stock + unidad solo para terminado */}
+              {}
               {!esManufacturado && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -288,10 +288,10 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             </div>
           </SeccionCard>
 
-          {/* Receta / Constructor de ingredientes (solo manufacturado) */}
+          {}
           {esManufacturado && (
             <SeccionCard titulo="🥘 Receta">
-              {/* Buscador con autocompletado */}
+              {}
               <div className="relative mb-3">
                 <input
                   className="input-field"
@@ -321,7 +321,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
                 )}
               </div>
 
-              {/* Tabla de ingredientes de la receta */}
+              {}
               {ingredientesSeleccionados.length === 0 ? (
                 <p className="text-slate-500 text-sm text-center py-4 border border-dashed border-border rounded-lg">
                   Buscá y agregá ingredientes para armar la receta.
@@ -379,7 +379,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             </SeccionCard>
           )}
 
-          {/* Categorías */}
+          {}
           <SeccionCard titulo="🏷️ Categorías">
             {catsSeleccionadas.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
@@ -409,10 +409,10 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
           </SeccionCard>
         </div>
 
-        {/* ─────────── Columna derecha (30%) ─────────── */}
+        {}
         <div className="lg:col-span-1 space-y-4">
 
-          {/* Calculadora de precios (solo manufacturado) */}
+          {}
           {esManufacturado && (
             <SeccionCard titulo="💰 Calculadora de precio">
               <div className="space-y-1.5 text-sm">
@@ -461,7 +461,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             </SeccionCard>
           )}
 
-          {/* Imágenes con drag & drop */}
+          {}
           <SeccionCard titulo="🖼️ Imágenes">
             <div
               onClick={() => fileInputRef.current?.click()}
@@ -504,7 +504,7 @@ function ProductoForm({ initial, categorias, unidades, onSubmit, isLoading, erro
             )}
           </SeccionCard>
 
-          {/* Resumen & Guardar */}
+          {}
           <SeccionCard titulo="✅ Resumen" className="lg:sticky lg:top-2">
             <div className="space-y-3">
               <div>
@@ -667,7 +667,7 @@ export default function ProductosPage() {
             <option key={cat.id} value={cat.id}>{'  '.repeat(nivel)}{cat.nombre}</option>
           ))}
         </select>
-        {/* Toggle tabla / tarjetas */}
+        {}
         <div className="ml-auto flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
           {(['tabla', 'tarjetas'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)}
@@ -760,7 +760,6 @@ export default function ProductosPage() {
           </table>
         </div>
         ) : (
-        /* ── Vista tarjetas ── */
         productos.length === 0 ? (
           <div className="card text-center py-10 text-slate-500">Sin resultados</div>
         ) : (

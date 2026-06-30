@@ -1,15 +1,3 @@
-"""
-Panel de Administración — /admin/
-Solo accesible por ADMIN.
-
-Endpoints:
-  GET  /admin/usuarios                     → listado paginado con filtro por rol
-  GET  /admin/usuarios/{id}                → detalle de usuario
-  POST /admin/usuarios/{id}/activar        → activar cuenta
-  POST /admin/usuarios/{id}/desactivar     → desactivar cuenta (soft disable)
-  POST /admin/usuarios/{id}/roles          → asignar rol
-  DELETE /admin/usuarios/{id}/roles/{rol}  → quitar rol
-"""
 
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status

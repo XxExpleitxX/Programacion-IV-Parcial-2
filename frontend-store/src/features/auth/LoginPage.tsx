@@ -64,7 +64,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
 
-      {/* ── Lado izquierdo — foto heroica ── */}
+      {}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1200&q=85"
@@ -91,11 +91,11 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Lado derecho — formulario ── */}
+      {}
       <div className="flex-1 bg-[#111] flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
 
-          {/* Logo mobile */}
+          {}
           <div className="lg:hidden text-center mb-8">
             <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
               <span className="text-2xl">🍕</span>
@@ -103,7 +103,7 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-white">Food Store</h1>
           </div>
 
-          {/* ── Vista inicio ── */}
+          {}
           {modo === 'inicio' && (
             <div className="space-y-5">
               <div className="mb-8">
@@ -113,7 +113,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Google */}
+              {}
               <button
                 onClick={() => alert('Google login próximamente')}
                 className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-colors shadow-md"
@@ -127,14 +127,14 @@ export default function LoginPage() {
                 Continuar con Google
               </button>
 
-              {/* Separador */}
+              {}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-800" />
                 <span className="text-gray-600 text-sm">o</span>
                 <div className="flex-1 h-px bg-gray-800" />
               </div>
 
-              {/* Registrarse */}
+              {}
               <button
                 onClick={() => setModo('register')}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-2xl transition-colors shadow-lg shadow-orange-500/20"
@@ -142,7 +142,7 @@ export default function LoginPage() {
                 Crear cuenta y pedir →
               </button>
 
-              {/* Login */}
+              {}
               <p className="text-center text-gray-500 text-sm pt-2">
                 ¿Ya tenés cuenta?{' '}
                 <button onClick={() => setModo('login')} className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
@@ -152,7 +152,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* ── Vista login ── */}
+          {}
           {modo === 'login' && (
             <div>
               <div className="mb-8">
@@ -196,7 +196,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* ── Vista registro ── */}
+          {}
           {modo === 'register' && (
             <div>
               <div className="mb-8">

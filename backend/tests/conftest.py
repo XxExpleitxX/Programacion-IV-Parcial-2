@@ -1,13 +1,3 @@
-"""
-Fixtures globales de test.
-
-Estrategia de BD: SQLite in-memory (rápido, aislado por test). Se sobrescribe el
-`engine` de MySQL que usan el UoW y get_session, SOLO durante los tests.
-StaticPool → una única conexión in-memory compartida entre el TestClient y el UoW.
-
-Auth: las fixtures *_headers devuelven el header Authorization Bearer, que sirve
-tanto para la dependencia por cookie/header (deps.py) como para oauth2_scheme.
-"""
 import os
 import tempfile
 from decimal import Decimal

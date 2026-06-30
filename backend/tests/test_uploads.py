@@ -1,4 +1,3 @@
-"""Tests del módulo de uploads Cloudinary con el SDK mockeado."""
 
 
 def test_upload_imagen_ok(client, admin_headers, monkeypatch):

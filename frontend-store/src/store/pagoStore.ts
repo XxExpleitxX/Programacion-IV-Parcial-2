@@ -1,9 +1,3 @@
-/**
- * pagoStore — estado del proceso de pago con MercadoPago.
- *
- * Guarda el resultado del último pago para que la pantalla de seguimiento
- * pueda mostrar feedback ("pago aprobado / rechazado") tras volver del checkout.
- */
 import { create } from 'zustand'
 
 export interface UltimoPago {

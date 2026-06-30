@@ -1,10 +1,3 @@
-"""
-Registro central de modelos SQLModel.
-
-Importar este paquete registra TODAS las tablas en SQLModel.metadata
-(necesario antes de create_all y de las migraciones de Alembic).
-Orden: catálogos sin FK → entidades → pivotes.
-"""
 from app.modules.unidades.unidad_medida import UnidadMedida          # noqa: F401
 from app.modules.categorias.categoria import Categoria               # noqa: F401
 from app.modules.ingredientes.ingrediente import Ingrediente         # noqa: F401

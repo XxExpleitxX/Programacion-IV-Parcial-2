@@ -1,10 +1,3 @@
-"""
-Tests del WebSocket de seguimiento de pedidos (RN-06).
-
-Verifican que un cambio de estado vía REST dispara el broadcast POST-commit
-y llega al suscriptor por el canal del pedido y por el canal admin, además del
-cierre por token inválido. Se usa el TestClient de FastAPI (websocket_connect).
-"""
 import pytest
 from sqlmodel import select
 from starlette.websockets import WebSocketDisconnect
@@ -17,7 +10,6 @@ def _user_id(db_session, username: str) -> int:
 
 
 def _token(headers: dict) -> str:
-    """Extrae el JWT crudo del header Authorization Bearer para el query param ?token=."""
     return headers["Authorization"].split(" ", 1)[1]
 
 

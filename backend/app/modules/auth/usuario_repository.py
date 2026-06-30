@@ -1,6 +1,3 @@
-"""
-Repositorio de Usuario — acceso a datos, sin lógica de negocio.
-"""
 
 from typing import Optional, List
 from sqlmodel import Session, select

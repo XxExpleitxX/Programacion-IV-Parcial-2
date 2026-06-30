@@ -75,8 +75,6 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 # ─── Violaciones de integridad de BD → 409 limpio (en vez de 500) ────────
 @app.exception_handler(IntegrityError)
 async def integrity_error_handler(request: Request, exc: IntegrityError):
-    """Nombre/código duplicado (UNIQUE) o referencia inexistente (FK).
-    Sin esto, cualquiera de estos casos saldría como 500."""
     msg = str(getattr(exc, "orig", exc)).lower()
     if "duplicate" in msg or "1062" in msg or "unique" in msg:
         detail = "Ya existe un registro con ese valor (nombre o código duplicado)."

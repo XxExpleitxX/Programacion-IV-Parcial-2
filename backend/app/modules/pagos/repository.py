@@ -1,6 +1,3 @@
-"""
-PagoRepository — acceso a la tabla pagos.
-"""
 from typing import Optional, List
 from sqlmodel import Session, select
 

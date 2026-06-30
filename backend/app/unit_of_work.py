@@ -1,16 +1,3 @@
-"""
-Unit of Work — gestión transaccional atómica.
-
-CAMBIO IMPORTANTE (devolución del profe — "no commits manuales"):
-  Antes el ROUTER tenía que llamar uow.commit() a mano en cada endpoint.
-  Ahora el commit es AUTOMÁTICO:
-    - Si el bloque `with UnitOfWork()` termina sin error → __exit__ hace commit().
-    - Si se lanza una excepción                          → __exit__ hace rollback().
-    - En ambos casos se cierra la sesión.
-
-  Resultado: NADIE llama commit() a mano (ni el router, ni el service, ni el seed).
-  La transacción es atómica y la coordina un solo lugar: este Unit of Work.
-"""
 
 from sqlmodel import Session
 from app.core.database import engine
@@ -82,25 +69,16 @@ class UnitOfWork:
         self.session.rollback()
 
     def flush(self) -> None:
-        """Empuja los cambios a la BD sin commitear (sirve para obtener IDs autogenerados)."""
         self.session.flush()
 
     def refresh(self, entity) -> None:
         self.session.refresh(entity)
 
     def emit_pedido_event(self, pedido_id: int, evento: dict) -> None:
-        """Encola un evento WS para emitirlo DESPUÉS del commit (RN-06)."""
         self.events.append((pedido_id, evento))
 
 
 async def get_uow():
-    """
-    Dependencia de FastAPI. Abre el UoW para el request y lo cierra al final.
-    - El commit/rollback es automático (vía __exit__).
-    - DESPUÉS del commit exitoso, emite por WebSocket los eventos encolados
-      durante la transacción (RN-06: broadcast post-commit, fuera del bloque UoW).
-      Si hubo excepción, el __exit__ hace rollback y NO se emite nada.
-    """
     with UnitOfWork() as uow:
         yield uow
     # Acá el bloque `with` ya cerró → commit hecho. Recién ahora notificamos.

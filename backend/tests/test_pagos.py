@@ -1,4 +1,3 @@
-"""Tests de pagos MercadoPago con el SDK mockeado."""
 from sqlmodel import select
 from app.modules.auth.usuario import Usuario
 
@@ -8,7 +7,6 @@ def _user_id(db_session, username: str) -> int:
 
 
 class _FakePayment:
-    """Simula sdk.payment(): create() aprueba, get() reconsulta."""
     def __init__(self, store):
         self._store = store
 
@@ -38,7 +36,6 @@ class _FakeSDK:
 
 
 def _crear_pedido_api(client, headers, producto_id) -> int:
-    """Crea un pedido PENDIENTE vía la API (todo pasa por el UoW)."""
     r = client.post("/api/v1/pedidos/", headers=headers, json={
         "forma_pago_codigo": "MERCADOPAGO",
         "items": [{"producto_id": producto_id, "cantidad": 1}],

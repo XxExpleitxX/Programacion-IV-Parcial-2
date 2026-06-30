@@ -1,7 +1,3 @@
-/**
- * Estado de autenticación del Store.
- * Persiste en localStorage con clave 'store_user'.
- */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AuthUser } from '../shared/types/index'

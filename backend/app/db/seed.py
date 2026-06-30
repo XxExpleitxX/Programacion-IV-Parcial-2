@@ -1,24 +1,3 @@
-"""
-Seed del sistema — carga TODOS los datos iniciales obligatorios.
-
-Ejecutar:
-    python -m app.db.seed
-
-Carga, en orden:
-    1. Roles            → ADMIN, STOCK, PEDIDOS, CLIENT
-    2. EstadoPedido     → 5 estados: PENDIENTE, CONFIRMADO, EN_PREP, ENTREGADO, CANCELADO
-    3. FormaPago        → MERCADOPAGO, EFECTIVO, TRANSFERENCIA
-    4. UnidadMedida     → kg, g, L, ml, ud, porciones
-    5. Usuarios         → admin (obligatorio) + stock + pedidos + cliente (cortesía, uno por rol)
-                          admin@foodstore.com / Admin1234!         (ADMIN)
-                          stock@foodstore.com / Stock1234!         (STOCK)
-                          pedidos@foodstore.com / Pedidos1234!     (PEDIDOS)
-                          cliente@foodstore.com / Cliente1234!     (CLIENT)
-
-El commit es automático: lo hace el Unit of Work al cerrar el bloque `with`
-(si no hubo error). No hay commits manuales.
-Es idempotente: si un registro ya existe, lo saltea.
-"""
 
 from app.core.security import hash_password
 from app.modules.auth.usuario import Rol, Usuario

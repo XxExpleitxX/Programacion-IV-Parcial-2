@@ -1,7 +1,3 @@
-"""
-Dependencias FastAPI para control de acceso basado en roles (RBAC).
-Actualizado para usar user.roles (lista) en lugar de user.rol (string).
-"""
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 
@@ -26,7 +22,6 @@ ROLES_VALIDOS = {ROL_ADMIN, "STOCK", "PEDIDOS", "CLIENT"}
 # HELPER
 # ─────────────────────────────────────────────
 def _tiene_rol(user: Usuario, *roles: str) -> bool:
-    """Devuelve True si el usuario tiene AL MENOS UNO de los roles dados."""
     user_roles = user.roles   # property que devuelve List[str]
     return any(r in user_roles for r in roles)
 
@@ -63,7 +58,6 @@ def get_current_user(
 # DEPENDENCIAS DE ROL
 # ─────────────────────────────────────────────
 def require_admin(user: Usuario = Depends(get_current_user)) -> Usuario:
-    """Solo ADMIN puede pasar."""
     if not _tiene_rol(user, "ADMIN"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -73,7 +67,6 @@ def require_admin(user: Usuario = Depends(get_current_user)) -> Usuario:
 
 
 def require_admin_or_editor(user: Usuario = Depends(get_current_user)) -> Usuario:
-    """ADMIN o STOCK pueden pasar."""
     if not _tiene_rol(user, "ADMIN", "STOCK"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -83,15 +76,10 @@ def require_admin_or_editor(user: Usuario = Depends(get_current_user)) -> Usuari
 
 
 def require_authenticated(user: Usuario = Depends(get_current_user)) -> Usuario:
-    """Cualquier usuario autenticado."""
     return user
 
 
 def require_roles(*roles_permitidos: str):
-    """
-    Factory — acepta los roles dados.
-    Uso: Depends(require_roles("ADMIN", "STOCK"))
-    """
     def checker(user: Usuario = Depends(get_current_user)) -> Usuario:
         if not _tiene_rol(user, *roles_permitidos):
             raise HTTPException(

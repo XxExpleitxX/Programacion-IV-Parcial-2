@@ -1,9 +1,3 @@
-"""
-Repositorios de Pedido — TODA consulta a la BD vive acá (no en el service).
-
-Nota: el HistorialEstadoPedidoRepository se movió a su propio archivo
-(historial_estado_pedido_repository.py).
-"""
 
 from typing import Optional, List
 from sqlmodel import Session, select, func
@@ -18,7 +12,6 @@ class PedidoRepository(BaseRepository[Pedido]):
         super().__init__(session, Pedido)
 
     def get_by_usuario(self, usuario_id: int, offset: int = 0, limit: int = 20) -> List[Pedido]:
-        """Pedidos de un cliente (sin los borrados), más nuevos primero."""
         return self.session.exec(
             select(Pedido)
             .where(Pedido.usuario_id == usuario_id)
@@ -35,10 +28,6 @@ class PedidoRepository(BaseRepository[Pedido]):
         ).one()
 
     def get_all_active(self, estado: Optional[str] = None, offset: int = 0, limit: int = 20) -> List[Pedido]:
-        """
-        Todos los pedidos activos (ADMIN/PEDIDOS), con filtro opcional por estado.
-        ANTES esta query estaba en el service -> ahora vive donde corresponde: el repo.
-        """
         query = select(Pedido).where(Pedido.deleted_at == None)   # noqa: E711
         if estado:
             query = query.where(Pedido.estado_codigo == estado.upper())
@@ -64,7 +53,6 @@ class DetallePedidoRepository(BaseRepository[DetallePedido]):
         super().__init__(session, DetallePedido)
 
     def bulk_create(self, detalles: List[DetallePedido]) -> None:
-        """Agrega varios detalles de una (el commit lo hace el UoW)."""
         for d in detalles:
             self.session.add(d)
 

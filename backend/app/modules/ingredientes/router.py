@@ -1,10 +1,3 @@
-"""
-Router de ingredientes.
-
-Patrón UoW:
-  - El router controla el commit
-  - El servicio solo opera sin commitear
-"""
 
 from typing import Annotated, Optional, List
 from fastapi import APIRouter, Depends, Query, Path, status

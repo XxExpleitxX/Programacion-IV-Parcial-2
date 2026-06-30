@@ -52,7 +52,7 @@ export default function CarritoPage() {
         ))}
       </div>
 
-      {/* Resumen */}
+      {}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
         <div className="flex justify-between text-gray-400 text-sm mb-2">
           <span>Subtotal</span>

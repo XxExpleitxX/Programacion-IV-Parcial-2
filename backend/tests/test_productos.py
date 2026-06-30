@@ -1,10 +1,3 @@
-"""
-Tests del CRUD de productos.
-
-Cubre la creación vía ProductoCreate (incluye el roundtrip de imagenes_url[] de
-Cloudinary) y el control de acceso por rol ADMIN. Sirve además de regresión del
-schema de precio_base (Decimal).
-"""
 
 
 def test_crear_producto_ok(client, admin_headers):

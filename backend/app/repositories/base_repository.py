@@ -5,10 +5,6 @@ T = TypeVar("T", bound=SQLModel)
 
 
 class BaseRepository(Generic[T]):
-    """
-    Repositorio genérico con operaciones CRUD básicas.
-    NO hace commit: el commit lo coordina la Unit of Work.
-    """
 
     def __init__(self, session: Session, model: Type[T]):
         self.session = session
@@ -29,7 +25,6 @@ class BaseRepository(Generic[T]):
         self.session.delete(entity)
 
     def flush(self) -> None:
-        """Empuja los cambios pendientes a la BD sin commitear (para obtener IDs)."""
         self.session.flush()
 
     def refresh(self, entity: T) -> None:

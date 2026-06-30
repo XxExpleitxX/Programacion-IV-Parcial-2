@@ -19,7 +19,6 @@ class ProductoRepository(BaseRepository[Producto]):
         precio_min: Optional[Decimal] = None,
         precio_max: Optional[Decimal] = None,
     ):
-        """Construye la query con todos los filtros (sin offset/limit)."""
         query = select(Producto).where(Producto.deleted_at == None)  # noqa: E711
         if nombre:
             query = query.where(Producto.nombre.contains(nombre))
@@ -82,7 +81,6 @@ class ProductoRepository(BaseRepository[Producto]):
         self.session.add(pi)
 
     def get_manufacturados_que_usan(self, ingrediente_ids: List[int]) -> List[Producto]:
-        """Productos manufacturados activos cuya receta usa alguno de esos insumos."""
         if not ingrediente_ids:
             return []
         query = (
@@ -104,8 +102,6 @@ class ProductoRepository(BaseRepository[Producto]):
             self.session.delete(pi)
 
     def delete_refs_a_ingrediente(self, ingrediente_id: int) -> None:
-        """Borra todas las filas de receta que referencian a un ingrediente
-        (usado al eliminar un ingrediente que ya no está en productos activos)."""
         refs = self.session.exec(
             select(ProductoIngrediente).where(ProductoIngrediente.ingrediente_id == ingrediente_id)
         ).all()

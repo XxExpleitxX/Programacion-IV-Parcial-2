@@ -1,11 +1,3 @@
-"""
-DetallePedido — ítems del pedido.
-
-INMUTABLE desde creación (RN-04):
-  - sin updated_at por diseño
-  - nombre_snapshot y precio_snapshot copiados desde Producto al crear
-  - personalizacion: lista de IDs de ingredientes removidos (es_removible=True)
-"""
 
 from datetime import datetime
 from decimal import Decimal

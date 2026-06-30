@@ -1,4 +1,3 @@
-"""Tests del ciclo de vida de pedidos: FSM + historial append-only."""
 from sqlmodel import select
 from app.modules.auth.usuario import Usuario
 

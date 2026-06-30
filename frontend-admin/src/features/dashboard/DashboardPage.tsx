@@ -1,15 +1,3 @@
-/**
- * DashboardPage — Panel de estadísticas (solo ADMIN).
- *
- * Gráficos (spec §11):
- *   1. AreaChart  → ventas por período (área con gradiente + línea de pedidos)
- *   2. BarChart   → top 5 productos por ingresos (horizontal)
- *   3. PieChart   → pedidos por estado (dona con total al centro + colores semánticos)
- *   4. BarChart   → ingresos por forma de pago (horizontal)
- *
- * KPI cards (4) con icono, indicador de tendencia y jerarquía visual.
- * TanStack Query con refetch cada 60 seg.
- */
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -194,7 +182,7 @@ export default function DashboardPage() {
         <p className="text-slate-400 text-sm mt-1">Métricas del negocio en tiempo real</p>
       </div>
 
-      {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
+      {}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loadResumen ? (
           [1, 2, 3, 4].map(i => <Skeleton key={i} h="h-28" />)
@@ -229,7 +217,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── Ventas por período (AreaChart) ─────────────────────────────────── */}
+      {}
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h2 className="text-base font-medium text-slate-100">Ventas por período</h2>
@@ -315,10 +303,10 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── Fila: Top productos + Pedidos por estado ───────────────────────── */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Top 5 productos (BarChart horizontal) */}
+        {}
         <div className="bg-card border border-border rounded-xl p-5">
           <h2 className="text-base font-medium text-slate-100 mb-4">Top 5 productos por ingresos</h2>
           {loadTop ? <Skeleton /> : (
@@ -364,7 +352,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Pedidos por estado (dona con total al centro) */}
+        {}
         <div className="bg-card border border-border rounded-xl p-5">
           <h2 className="text-base font-medium text-slate-100 mb-4">Pedidos por estado</h2>
           {loadEstado ? <Skeleton /> : (
@@ -372,7 +360,7 @@ export default function DashboardPage() {
               <EmptyChart mensaje="Sin pedidos registrados" />
             ) : (
               <div className="flex items-center gap-5">
-                {/* Dona con total al centro */}
+                {}
                 <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -396,7 +384,7 @@ export default function DashboardPage() {
                     <span className="text-[10px] text-slate-400 uppercase tracking-wide">pedidos</span>
                   </div>
                 </div>
-                {/* Lista limpia a la derecha */}
+                {}
                 <ul className="flex-1 space-y-2">
                   {estadoData.map(e => (
                     <li key={e.name} className="flex items-center justify-between text-sm">
@@ -419,7 +407,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Ingresos por forma de pago (BarChart horizontal) ──────────────── */}
+      {}
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-medium text-slate-100">Ingresos por forma de pago</h2>

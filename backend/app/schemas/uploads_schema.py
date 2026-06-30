@@ -1,4 +1,3 @@
-"""Schemas del módulo de uploads (Cloudinary)."""
 from sqlmodel import SQLModel
 
 

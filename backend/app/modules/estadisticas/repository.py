@@ -1,16 +1,3 @@
-"""
-EstadisticasRepository — queries de SOLO LECTURA para KPIs y métricas.
-
-Reglas de negocio específicas para estadísticas (marcadas como EST-XX) que se aplican:
-  EST-01: nunca incluir pedidos CANCELADO en ingresos ni cantidades.
-  EST-02: usar subtotal_snap de DetallePedido para ingresos por producto.
-  EST-03: solo pagos con mp_status='approved' al calcular ingresos confirmados.
-  EST-04: los montos se devuelven como Decimal (el service los cuantiza a 2 dec).
-  EST-05: las queries de período aceptan `desde`/`hasta` como date y filtran con BETWEEN.
-
-Nota de portabilidad: el agrupamiento por período se hace en Python (no con
-DATE_TRUNC) para que funcione igual en MySQL (prod), SQLite (tests) y PostgreSQL.
-"""
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
@@ -26,7 +13,6 @@ ESTADOS_ACTIVOS = ("PENDIENTE", "CONFIRMADO", "EN_PREP")
 
 
 def _periodo_key(dt: datetime, agrupacion: str) -> str:
-    """Bucket de un datetime según la agrupación pedida."""
     if agrupacion == "month":
         return dt.strftime("%Y-%m")
     if agrupacion == "week":

@@ -1,4 +1,3 @@
-/** Contenedor de notificaciones (toasts). Lee del uiStore. */
 import { useUI } from '../../store/uiStore'
 
 const ESTILOS: Record<string, string> = {

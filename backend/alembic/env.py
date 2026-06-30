@@ -1,10 +1,3 @@
-"""
-Entorno de Alembic.
-
-- target_metadata = SQLModel.metadata (importa app.models para registrar todas las tablas).
-- La URL sale de app.core.database.DATABASE_URL (MySQL), con override por la variable
-  de entorno ALEMBIC_DB_URL (útil para autogenerar/probar contra SQLite sin MySQL).
-"""
 import os
 from logging.config import fileConfig
 

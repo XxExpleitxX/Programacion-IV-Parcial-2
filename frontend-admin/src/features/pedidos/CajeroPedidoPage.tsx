@@ -122,7 +122,7 @@ function PedidoCard({ pedido, now, onAvanzar, compact, draggable, onDragStart }:
         draggable ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
     >
-      {/* Header */}
+      {}
       <div className="flex justify-between items-start mb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -142,7 +142,7 @@ function PedidoCard({ pedido, now, onAvanzar, compact, draggable, onDragStart }:
 
       {!compact && <Timeline estado={pedido.estado_codigo} />}
 
-      {/* Items */}
+      {}
       <div className="bg-card/60 rounded-lg p-3 mb-3 space-y-1.5">
         {(pedido.detalles ?? []).map((d: DetallePedido, i: number) => (
           <div key={i} className="flex justify-between text-sm">
@@ -153,7 +153,7 @@ function PedidoCard({ pedido, now, onAvanzar, compact, draggable, onDragStart }:
         {pedido.notas && <div className="text-xs text-slate-500 pt-1 border-t border-border">📝 {pedido.notas}</div>}
       </div>
 
-      {/* Acciones */}
+      {}
       {transiciones.length > 0 ? (
         <div className={`grid gap-2 ${transiciones.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {transiciones.map(estado => (
@@ -351,7 +351,7 @@ function NuevoPedidoPanel({ onPedidoCreado }: { onPedidoCreado: () => void }) {
 
       {expandido && (
         <div className="mt-6 space-y-5">
-          {/* Selector de productos */}
+          {}
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">Productos disponibles</label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
@@ -365,7 +365,7 @@ function NuevoPedidoPanel({ onPedidoCreado }: { onPedidoCreado: () => void }) {
             </div>
           </div>
 
-          {/* Carrito */}
+          {}
           {items.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">Pedido</label>
@@ -395,7 +395,7 @@ function NuevoPedidoPanel({ onPedidoCreado }: { onPedidoCreado: () => void }) {
             </div>
           )}
 
-          {/* Forma de pago y notas */}
+          {}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">Forma de pago</label>
@@ -476,7 +476,7 @@ export default function CajeroPedidosPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Toggle Lista / Tablero */}
+          {}
           <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
             {(['lista', 'kanban'] as const).map(v => (
               <button key={v} onClick={() => setVista(v)}
@@ -496,10 +496,10 @@ export default function CajeroPedidosPage() {
         </div>
       </div>
 
-      {/* Panel nuevo pedido */}
+      {}
       <NuevoPedidoPanel onPedidoCreado={() => queryClient.invalidateQueries({ queryKey: ['pedidos-cajero'] })} />
 
-      {/* Lista de pedidos */}
+      {}
       {isLoading && <p className="text-slate-400">Cargando pedidos...</p>}
       {isError && <p className="text-red-400">Error al cargar los pedidos.</p>}
 

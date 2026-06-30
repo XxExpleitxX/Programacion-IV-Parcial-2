@@ -1,8 +1,3 @@
-"""
-RefreshTokenRepository — persistencia de refresh tokens (para poder invalidarlos).
-
-Se guarda el SHA-256 del token (token_hash), nunca el token crudo.
-"""
 from datetime import datetime
 from typing import Optional
 from sqlmodel import Session, select
@@ -21,7 +16,6 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
         return rt
 
     def get_valid(self, token_hash: str) -> Optional[RefreshToken]:
-        """Devuelve el refresh token solo si existe, no está revocado y no expiró."""
         rt = self.session.exec(
             select(RefreshToken).where(RefreshToken.token_hash == token_hash)
         ).first()

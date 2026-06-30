@@ -1,4 +1,3 @@
-/** Nodo mínimo del árbol de categorías que necesitan estos helpers. */
 interface CategoriaNodo {
   id: number
   subcategorias?: CategoriaNodo[]

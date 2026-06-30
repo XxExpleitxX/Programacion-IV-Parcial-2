@@ -1,7 +1,3 @@
-"""
-Módulo de manejo de JSON Web Tokens (JWT).
-Responsabilidad única: crear y decodificar tokens. NADA MÁS.
-"""
 import os
 from datetime import datetime, timedelta
 from typing import Optional
@@ -21,7 +17,6 @@ def create_access_token(
     data: dict,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
-    """Genera un JWT firmado con la SECRET_KEY."""
     to_encode = data.copy()
     expire = datetime.utcnow() + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -34,7 +29,6 @@ def create_refresh_token(
     data: dict,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
-    """Genera un refresh token JWT (vida larga, con claim type='refresh')."""
     to_encode = data.copy()
     expire = datetime.utcnow() + (
         expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -44,10 +38,6 @@ def create_refresh_token(
 
 
 def decode_token(token: str) -> Optional[dict]:
-    """
-    Decodifica un JWT y devuelve su payload.
-    Devuelve None si el token es inválido o expiró.
-    """
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
@@ -55,11 +45,6 @@ def decode_token(token: str) -> Optional[dict]:
 
 
 def decode_token_estado(token: str) -> tuple[Optional[dict], Optional[str]]:
-    """
-    Como decode_token pero distingue el motivo de fallo.
-    Devuelve (payload, motivo) con motivo ∈ {None, 'expirado', 'invalido'}.
-    Útil para el WebSocket: token expirado → close 4001 (refrescar y reconectar).
-    """
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]), None
     except ExpiredSignatureError:

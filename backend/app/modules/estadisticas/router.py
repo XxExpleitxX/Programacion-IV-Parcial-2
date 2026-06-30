@@ -1,13 +1,3 @@
-"""
-Router de Estadísticas — solo ADMIN.
-Todos los endpoints son de SOLO LECTURA.
-
-  GET /api/v1/estadisticas/resumen              → KPI cards
-  GET /api/v1/estadisticas/ventas               → ventas por período (LineChart)
-  GET /api/v1/estadisticas/productos-top        → top productos (BarChart)
-  GET /api/v1/estadisticas/pedidos-por-estado   → distribución (PieChart)
-  GET /api/v1/estadisticas/ingresos             → ingresos por forma de pago
-"""
 from datetime import date, datetime, timedelta
 from typing import Annotated, Optional
 

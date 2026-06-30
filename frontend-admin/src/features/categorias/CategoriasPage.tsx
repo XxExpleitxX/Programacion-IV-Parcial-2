@@ -141,7 +141,7 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
           onChange={e => setDescripcion(e.target.value)} placeholder="Descripción opcional..." />
       </div>
 
-      {/* Identidad visual */}
+      {}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-1.5">Icono</label>
@@ -173,7 +173,7 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
         </div>
       </div>
 
-      {/* Vista previa */}
+      {}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-1">Vista previa</label>
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
@@ -183,7 +183,7 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
         </span>
       </div>
 
-      {/* Categoría padre — buscador con árbol */}
+      {}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-1">Categoría padre</label>
         <input className="input-field mb-1.5" placeholder="🔍 Buscar categoría padre…"
@@ -204,7 +204,7 @@ function CategoriaForm({ initial, categorias, onSubmit, isLoading, error }: Form
           ))}
         </div>
       </div>
-      {/* Imagen (Cloudinary) */}
+      {}
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-2">Imagen (Cloudinary)</label>
         {imagenUrl && (

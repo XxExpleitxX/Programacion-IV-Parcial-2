@@ -52,12 +52,6 @@ def _build_read(producto: Producto) -> ProductoRead:
 
 
 def _agregar_ingrediente(uow: UnitOfWork, producto_id: int, item: IngredienteCantidad) -> None:
-    """Asocia un ingrediente (con su cantidad) a la RECETA del producto.
-
-    No toca el stock del ingrediente: la receta es solo una plantilla. El stock
-    de insumos se descuenta al CREAR un pedido y se restaura al cancelarlo
-    (ver PedidoService._ajustar_stock).
-    """
     ingrediente = uow.ingredientes.get_by_id(item.ingrediente_id)
     if not ingrediente:
         raise HTTPException(status_code=404, detail=f"Ingrediente {item.ingrediente_id} no encontrado")
@@ -79,7 +73,6 @@ def get_all(
     precio_min: Optional[Decimal] = None,
     precio_max: Optional[Decimal] = None,
 ) -> dict:
-    """Devuelve el envelope de paginación {items, total, page, size, pages}."""
     filtros = dict(
         nombre=nombre, disponible=disponible, categoria_id=categoria_id,
         precio_min=precio_min, precio_max=precio_max,
@@ -97,13 +90,6 @@ def get_by_id(uow: UnitOfWork, producto_id: int) -> ProductoRead:
 
 
 def calcular_precio_sugerido(uow: UnitOfWork, producto_id: int, margen: float) -> dict:
-    """
-    Calcula el precio sugerido de venta basado en el costo de ingredientes
-    y un margen de ganancia porcentual.
-
-    margen: número entre 0 y 100 (ej: 30 = 30% de ganancia)
-    precio_sugerido = costo_total * (1 + margen / 100)
-    """
     if margen < 0 or margen > 1000:
         raise HTTPException(status_code=422, detail="El margen debe estar entre 0 y 1000")
 
@@ -231,7 +217,6 @@ def patch_disponibilidad(uow: UnitOfWork, producto_id: int, disponible: bool) ->
 
 
 def patch_stock(uow: UnitOfWork, producto_id: int, stock_cantidad: int) -> ProductoRead:
-    """Actualiza solo el stock de un producto. Permitido para ADMIN y STOCK."""
     producto = uow.productos.get_by_id(producto_id)
     if not producto or producto.deleted_at is not None:
         raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")

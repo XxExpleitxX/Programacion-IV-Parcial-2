@@ -1,6 +1,3 @@
-"""
-Categoria — tabla con auto-referencia para categorías anidadas.
-"""
 
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING

@@ -1,7 +1,3 @@
-"""
-Ingrediente — tabla global (no duplicado por producto).
-es_alergeno = true → badge UI en ProductoDetail y ProductCard.
-"""
 
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING

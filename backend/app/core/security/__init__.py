@@ -1,6 +1,3 @@
-"""
-Módulo de seguridad — re-exporta todo desde los submódulos.
-"""
 from app.core.security.password_hasher import hash_password, verify_password
 from app.core.security.jwt_handler import (
     create_access_token,
@@ -33,14 +30,6 @@ from app.core.security.jwt_handler import decode_token as decode_access_token
 from fastapi import Request
 
 def get_token_from_request(request: Request) -> str | None:
-    """
-    Lee el JWT del header Authorization Bearer y, si no está, de la cookie HttpOnly.
-    Prioridad: header → cookie.
-
-    El header refleja al usuario ACTUAL del SPA (el token de localStorage). La cookie
-    de `localhost` se comparte entre puertos (5173 tienda / 5174 admin), así que podría
-    quedar pegada de otra app/usuario; por eso el header manda y la cookie es fallback.
-    """
     from app.core.config import settings
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):

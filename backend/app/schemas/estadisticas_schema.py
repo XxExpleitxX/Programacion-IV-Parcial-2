@@ -1,7 +1,3 @@
-"""
-Schemas del módulo Estadísticas.
-Todos los montos son Decimal (EST-04: nunca float nativo para dinero).
-"""
 from decimal import Decimal
 from pydantic import BaseModel
 

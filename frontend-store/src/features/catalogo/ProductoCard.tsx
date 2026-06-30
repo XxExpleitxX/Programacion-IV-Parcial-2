@@ -24,7 +24,7 @@ export default function ProductoCard({ producto }: Props) {
   return (
     <div className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
       
-      {/* === IMAGEN === */}
+      {}
       <div className="relative h-40 bg-gray-800 overflow-hidden">
         {producto.imagenes_url && producto.imagenes_url.length > 0 ? (
           <img
@@ -39,7 +39,7 @@ export default function ProductoCard({ producto }: Props) {
           </div>
         )}
         
-        {/* Badge de stock sobre la imagen */}
+        {}
         {!producto.disponible && (
           <div className="absolute inset-0 bg-gray-900/70 flex items-center justify-center backdrop-blur-[2px]">
             <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -49,22 +49,22 @@ export default function ProductoCard({ producto }: Props) {
         )}
       </div>
 
-      {/* === CONTENIDO === */}
+      {}
       <div className="p-4 space-y-3">
         
-        {/* Título */}
+        {}
         <h3 className="font-semibold text-white text-sm leading-tight line-clamp-1">
           {producto.nombre}
         </h3>
 
-        {/* Descripción */}
+        {}
         {producto.descripcion && (
           <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed">
             {producto.descripcion}
           </p>
         )}
 
-        {/* Categorías */}
+        {}
         {producto.categorias && producto.categorias.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {producto.categorias.slice(0, 2).map(c => (
@@ -75,7 +75,7 @@ export default function ProductoCard({ producto }: Props) {
           </div>
         )}
 
-        {/* Precio y Detalles */}
+        {}
         <div className="flex items-end justify-between pt-2 border-t border-gray-800">
           <div className="flex flex-col">
             <span className="text-gray-500 text-[10px] uppercase tracking-wider">Precio</span>
@@ -91,9 +91,9 @@ export default function ProductoCard({ producto }: Props) {
           </button>
         </div>
 
-        {/* Selector de cantidad + Agregar */}
+        {}
         <div className="flex items-center gap-2">
-          {/* Stepper de cantidad */}
+          {}
           <div className="flex items-center bg-gray-800 border border-gray-700 rounded-xl">
             <button
               type="button"
@@ -116,7 +116,7 @@ export default function ProductoCard({ producto }: Props) {
             </button>
           </div>
 
-          {/* Botón Agregar */}
+          {}
           <button
             onClick={handleAgregar}
             disabled={!producto.disponible}

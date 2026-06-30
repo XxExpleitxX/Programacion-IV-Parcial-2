@@ -1,21 +1,3 @@
-"""
-PedidoService — FSM de estados + lógica de negocio.
-
-CAMBIOS (devolución del profe):
-  - El service ya NO usa uow.session directamente.
-    Todo acceso a la BD pasa por los repositorios (uow.pedidos, uow.detalles,
-    uow.historial, uow.productos, uow.formas_pago).
-  - El historial se inserta con uow.historial.append(...) (antes era session.add).
-  - El service NUNCA comitea (el commit lo hace el UoW automáticamente).
-    Solo usa flush() (para obtener el id del pedido) y refresh().
-
-FSM:
-  PENDIENTE  → CONFIRMADO | CANCELADO
-  CONFIRMADO → EN_PREP    | CANCELADO
-  EN_PREP    → ENTREGADO  | CANCELADO  (cancelar desde acá: solo ADMIN/PEDIDOS)
-  ENTREGADO  → (terminal)
-  CANCELADO  → (terminal)
-"""
 
 from datetime import datetime
 from decimal import Decimal
@@ -87,12 +69,6 @@ class PedidoService:
 
     @staticmethod
     def _verificar_stock(uow: UnitOfWork, producto: Producto, cantidad_pedida: int) -> None:
-        """Valida que haya stock suficiente ANTES de descontar. Si no, rechaza el
-        pedido (un local real no puede vender lo que no tiene).
-
-        Lee el stock ya descontado por ítems previos del mismo pedido (los objetos
-        viven en la sesión), así cubre líneas repetidas o insumos compartidos.
-        """
         if producto.es_manufacturado:
             faltantes = []
             for pi in producto.producto_ingredientes:
@@ -116,16 +92,6 @@ class PedidoService:
 
     @staticmethod
     def _ajustar_stock(uow: UnitOfWork, producto: Producto, cantidad_pedida: int, signo: int) -> None:
-        """Mueve el stock que consume un pedido.
-
-        signo = -1 → descuenta (al CREAR el pedido).
-        signo = +1 → restaura (al CANCELAR el pedido).
-
-        - Manufacturado: descuenta/restaura cada ingrediente de la receta
-          (cantidad_receta × cantidad_pedida).
-        - Terminado: descuenta/restaura su stock_cantidad. Al agotarse (≤0) se
-          marca disponible=False (sale del menú); reactivar es manual.
-        """
         if producto.es_manufacturado:
             for pi in producto.producto_ingredientes:
                 ingrediente = uow.ingredientes.get_by_id(pi.ingrediente_id)
@@ -142,9 +108,6 @@ class PedidoService:
 
     @staticmethod
     def _auto_agotar_manufacturados(uow: UnitOfWork, ingrediente_ids: set[int]) -> None:
-        """Tras consumir insumos, saca del menú los manufacturados que ya no se
-        pueden producir (algún ingrediente no alcanza ni para 1 unidad).
-        Reactivar es manual (reponer insumos + prender el switch)."""
         for prod in uow.productos.get_manufacturados_que_usan(list(ingrediente_ids)):
             if not prod.disponible:
                 continue
